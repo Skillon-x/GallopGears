@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
 import { XMarkIcon, PhotoIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 
-const AddHorseForm = ({ horse = null, onClose, onSuccess }) => {
+const AddHorseForm = ({ horse, onClose, onSuccess }) => {
   const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     breed: '',
@@ -13,14 +14,13 @@ const AddHorseForm = ({ horse = null, onClose, onSuccess }) => {
     gender: '',
     color: '',
     height: '',
-    training: '',
     discipline: '',
+    training: '',
     health: '',
     location: '',
     description: '',
     images: []
   });
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -46,15 +46,28 @@ const AddHorseForm = ({ horse = null, onClose, onSuccess }) => {
         seller: user.id
       };
 
+      const config = {
+        withCredentials: true
+      };
+
       if (horse) {
-        await axios.put(`http://localhost:5000/api/horses/${horse._id}`, data);
+        await axios.put(
+          `http://localhost:5000/api/horses/${horse._id}`,
+          data,
+          config
+        );
       } else {
-        await axios.post('http://localhost:5000/api/horses', data);
+        await axios.post(
+          'http://localhost:5000/api/horses',
+          data,
+          config
+        );
       }
 
       onSuccess();
     } catch (error) {
-      setError(error.response?.data?.error || 'Failed to save horse');
+      console.error('Error:', error.response || error);
+      setError(error.response?.data?.error || 'Failed to save horse. Please ensure you are logged in as a seller.');
     } finally {
       setLoading(false);
     }
@@ -62,24 +75,43 @@ const AddHorseForm = ({ horse = null, onClose, onSuccess }) => {
 
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
-    // Here you would typically upload to a service like AWS S3
-    // For now, we'll just create local URLs
-    const urls = files.map(file => URL.createObjectURL(file));
-    setFormData(prev => ({
-      ...prev,
-      images: [...prev.images, ...urls]
-    }));
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      files.forEach(file => {
+        formData.append('images', file);
+      });
+
+      const response = await axios.post(
+        'http://localhost:5000/api/upload',
+        formData,
+        { withCredentials: true }
+      );
+
+      setFormData(prev => ({
+        ...prev,
+        images: [...prev.images, ...response.data.urls]
+      }));
+    } catch (error) {
+      setError('Failed to upload images');
+      console.error('Upload error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">
+          <h2 className="text-2xl font-bold text-primary-700">
             {horse ? 'Edit Horse' : 'Add New Horse'}
           </h2>
-          <button onClick={onClose}>
-            <XMarkIcon className="h-6 w-6 text-gray-400 hover:text-gray-600" />
+          <button 
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
 
@@ -264,13 +296,15 @@ const AddHorseForm = ({ horse = null, onClose, onSuccess }) => {
               type="button"
               onClick={onClose}
               className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              disabled={loading}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className={`btn-primary ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors
+                ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {loading ? 'Saving...' : (horse ? 'Save Changes' : 'Add Horse')}
             </button>

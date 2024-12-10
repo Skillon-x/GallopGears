@@ -16,10 +16,11 @@ export const AuthProvider = ({ children }) => {
         password
       }, { withCredentials: true });
 
-      const userData = response.data.user;
-      setUser(userData);
-      localStorage.setItem('user', JSON.stringify(userData));
-      return userData;
+      const { user, token } = response.data;
+      setUser(user);
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('token', token);
+      return user;
     } catch (error) {
       throw new Error(error.response?.data?.error || 'Login failed');
     }
@@ -35,6 +36,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setUser(null);
       localStorage.removeItem('user');
+      localStorage.removeItem('token');
     }
   };
 
