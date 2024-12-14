@@ -1,0 +1,18 @@
+{
+  "adminToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3NWIyNzc5YjQwYjNiZDIwZWJkNDFjNCIsImlhdCI6MTczNDAyNzEzMCwiZXhwIjoxNzM2NjE5MTMwfQ.y3KqRcf8y0mwngubclEuL_JKt4VNBytvjEkSHFwu4yw",
+  "royalSellerToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3NWIyNzdhYjQwYjNiZDIwZWJkNDFjNyIsImlhdCI6MTczNDAyNzEzMCwiZXhwIjoxNzM2NjE5MTMwfQ.kwU5UkcV6SjnViZJB-tpY4FowaxkGkKaqqCrWObEvKM",
+  "gallopSellerToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3NWIyNzdhYjQwYjNiZDIwZWJkNDFjZCIsImlhdCI6MTczNDAyNzEzMCwiZXhwIjoxNzM2NjE5MTMwfQ.aCxjcDmbRjxq27UvJqTskVoAvhIxKBkhNrBWDGXzYvg",
+  "trotSellerToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3NWIyNzdhYjQwYjNiZDIwZWJkNDFkMyIsImlhdCI6MTczNDAyNzEzMCwiZXhwIjoxNzM2NjE5MTMwfQ.unJifwXvgIKsOc2ugvxh141rKK8_8g_ARKR7_U6hjlQ",
+  "starterSellerToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3NWIyNzdhYjQwYjNiZDIwZWJkNDFkOSIsImlhdCI6MTczNDAyNzEzMSwiZXhwIjoxNzM2NjE5MTMxfQ.KxFmgdgC_6EPBZYTY2EEp5MbZMl_8h-ld2PT__dAEt0",
+  "userToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3NWIyNzdiYjQwYjNiZDIwZWJkNDFkZiIsImlhdCI6MTczNDAyNzEzMSwiZXhwIjoxNzM2NjE5MTMxfQ.J7EEIOVxTgyXhu6_ZBs_-lbaJozrL1jdGiMFxgYlWUg",
+  "horseIds": {
+    "royal_0": "675b277bb40b3bd20ebd41e8",
+    "royal_1": "675b277bb40b3bd20ebd41ee",
+    "royal_2": "675b277cb40b3bd20ebd41f4",
+    "gallop_0": "675b277cb40b3bd20ebd41fe",
+    "gallop_1": "675b277cb40b3bd20ebd4204",
+    "trot": "675b277cb40b3bd20ebd420e",
+    "starter": "675b277db40b3bd20ebd4218"
+  },
+  "imageFiles": []
+}
