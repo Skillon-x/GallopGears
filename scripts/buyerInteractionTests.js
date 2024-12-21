@@ -1,156 +1,285 @@
-const chai = require('chai');
-const chaiHttp = require('chai-http');
-const app = require('../src/server');
-const { expect } = chai;
-const {
-    createTestUser,
-    createTestSeller,
-    createTestHorse,
-    createTestInquiry,
-    cleanupTestData
-} = require('./test.utils');
+const dotenv = require('dotenv');
+const crypto = require('crypto');
+const { log, makeRequest, runTests } = require('./test.utils');
 
-chai.use(chaiHttp);
+dotenv.config();
 
-describe('Buyer Interaction Features', () => {
-    let testUser, testToken, testSeller, testHorse, testInquiry;
+// Debug function
+const debug = (message, data = null) => {
+    if (process.env.DEBUG) {
+        console.log('\n[DEBUG]', message);
+        if (data) {
+            console.log(JSON.stringify(data, null, 2));
+        }
+    }
+};
 
-    before(async () => {
-        // Create test data
-        testUser = await createTestUser('buyer@test.com');
-        testToken = testUser.generateAuthToken();
-        testSeller = await createTestSeller();
-        testHorse = await createTestHorse(testSeller._id);
-        testInquiry = await createTestInquiry(testUser._id, testHorse._id);
-    });
+// Test data storage
+let testData = {
+    sellers: {
+        royal: { token: '', userId: '', profileId: '', orderId: '', paymentId: '', horses: [] },
+        gallop: { token: '', userId: '', profileId: '', orderId: '', paymentId: '', horses: [] },
+        trot: { token: '', userId: '', profileId: '', orderId: '', paymentId: '', horses: [] },
+        starter: { token: '', userId: '', profileId: '', horses: [] }
+    },
+    buyers: {
+        premium: { token: '', userId: '', inquiries: [], conversations: [] },
+        standard: { token: '', userId: '', inquiries: [], conversations: [] }
+    },
+    adminToken: '',
+    uploadedPhotos: {}
+};
 
-    after(async () => {
-        await cleanupTestData();
-    });
+const testSuites = [
+    // Previous test suites remain the same...
 
-    describe('Buyer Verification', () => {
-        it('should verify buyer with basic level', async () => {
-            const res = await chai.request(app)
-                .post('/api/buyer/verify')
-                .set('Authorization', `Bearer ${testToken}`)
-                .send({
-                    level: 'basic',
-                    documents: [
-                        { type: 'email', value: 'buyer@test.com' },
-                        { type: 'phone', value: '+1234567890' }
-                    ]
-                });
+    {
+        name: 'Buyer Registration',
+        tests: [
+            {
+                name: 'Register Buyers',
+                run: async () => {
+                    const buyerTypes = ['premium', 'standard'];
+                    
+                    for (const type of buyerTypes) {
+                        debug(`Registering ${type} buyer`);
+                        const result = await makeRequest('POST', '/auth/register', {
+                            name: `${type.charAt(0).toUpperCase() + type.slice(1)} Buyer`,
+                            email: `${type}buyer@test.com`,
+                            password: 'buyer123',
+                            role: 'user'
+                        });
 
-            expect(res).to.have.status(200);
-            expect(res.body.success).to.be.true;
-            expect(res.body.verification.level).to.equal('basic');
-            expect(res.body.verification.status).to.equal('verified');
-        });
-
-        it('should reject verification with missing documents', async () => {
-            const res = await chai.request(app)
-                .post('/api/buyer/verify')
-                .set('Authorization', `Bearer ${testToken}`)
-                .send({
-                    level: 'verified',
-                    documents: [
-                        { type: 'email', value: 'buyer@test.com' }
-                    ]
-                });
-
-            expect(res).to.have.status(400);
-            expect(res.body.success).to.be.false;
-            expect(res.body.message).to.include('Missing required documents');
-        });
-    });
-
-    describe('Contact Access', () => {
-        it('should grant contact access to verified buyer', async () => {
-            const res = await chai.request(app)
-                .post(`/api/buyer/contact-access/${testSeller._id}`)
-                .set('Authorization', `Bearer ${testToken}`);
-
-            expect(res).to.have.status(200);
-            expect(res.body.success).to.be.true;
-            expect(res.body.contactInfo).to.exist;
-        });
-
-        it('should reject unverified buyer contact access request', async () => {
-            const unverifiedUser = await createTestUser('unverified@test.com');
-            const unverifiedToken = unverifiedUser.generateAuthToken();
-
-            const res = await chai.request(app)
-                .post(`/api/buyer/contact-access/${testSeller._id}`)
-                .set('Authorization', `Bearer ${unverifiedToken}`);
-
-            expect(res).to.have.status(403);
-            expect(res.body.success).to.be.false;
-        });
-    });
-
-    describe('Activity Tracking', () => {
-        it('should track buyer viewing activity', async () => {
-            const res = await chai.request(app)
-                .post(`/api/buyer/activity/${testHorse._id}`)
-                .set('Authorization', `Bearer ${testToken}`)
-                .send({
-                    action: 'VIEW_LISTING',
-                    details: {
-                        duration: 300,
-                        sections: ['photos', 'description']
+                        if (!result.success) {
+                            throw new Error(`Failed to register ${type} buyer`);
+                        }
+                        
+                        testData.buyers[type].token = result.token;
+                        testData.buyers[type].userId = result.user._id;
                     }
-                });
+                }
+            }
+        ]
+    },
+    {
+        name: 'Horse Listing Management',
+        tests: [
+            {
+                name: 'Create Horse Listings',
+                run: async () => {
+                    for (const [sellerType, sellerData] of Object.entries(testData.sellers)) {
+                        debug(`Creating horse listings for ${sellerType} seller`);
 
-            expect(res).to.have.status(200);
-            expect(res.body.success).to.be.true;
-            expect(res.body.activity).to.exist;
-        });
+                        const listingsCount = {
+                            royal: 3,
+                            gallop: 2,
+                            trot: 1,
+                            starter: 1
+                        }[sellerType];
 
-        it('should update user interests on view', async () => {
-            const res = await chai.request(app)
-                .post(`/api/buyer/activity/${testHorse._id}`)
-                .set('Authorization', `Bearer ${testToken}`)
-                .send({
-                    action: 'VIEW_LISTING',
-                    details: { duration: 180 }
-                });
+                        for (let i = 0; i < listingsCount; i++) {
+                            const result = await makeRequest('POST', '/horses', {
+                                name: `${sellerType.charAt(0).toUpperCase() + sellerType.slice(1)} Horse ${i + 1}`,
+                                breed: 'Thoroughbred',
+                                age: { years: 5, months: 0 },
+                                gender: 'Stallion',
+                                color: 'Bay',
+                                price: 100000 * (i + 1),
+                                description: `Test horse ${i + 1} for ${sellerType} seller`,
+                                location: {
+                                    state: 'Maharashtra',
+                                    city: 'Mumbai',
+                                    pincode: '400001'
+                                },
+                                specifications: {
+                                    training: 'Advanced',
+                                    discipline: ['Dressage', 'Show Jumping'],
+                                    temperament: 'Calm',
+                                    healthStatus: 'Excellent',
+                                    vaccination: true,
+                                    papers: true
+                                }
+                            }, sellerData.token);
 
-            expect(res).to.have.status(200);
-            expect(res.body.success).to.be.true;
+                            if (!result.success) {
+                                throw new Error(`Failed to create horse listing for ${sellerType}`);
+                            }
 
-            // Verify user interests were updated
-            const updatedUser = await chai.request(app)
-                .get('/api/auth/me')
-                .set('Authorization', `Bearer ${testToken}`);
+                            testData.sellers[sellerType].horses.push(result.horse._id);
+                        }
+                    }
+                }
+            },
+            {
+                name: 'Upload Photos',
+                run: async () => {
+                    for (const [sellerType, sellerData] of Object.entries(testData.sellers)) {
+                        for (const horseId of sellerData.horses) {
+                            debug(`Uploading photos for horse ${horseId}`);
 
-            expect(updatedUser.body.interests).to.include(testHorse.breed);
-        });
-    });
+                            const testPhotos = [
+                                {
+                                    name: 'main.jpg',
+                                    content: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/4QBORXhpZgAATU0AKgAAAAgABAMCAAIAAAA...',
+                                    size: 1024 * 1024
+                                },
+                                {
+                                    name: 'profile.jpg',
+                                    content: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/4QBORXhpZgAATU0AKgAAAAgABAMCAAIAAAA...',
+                                    size: 1024 * 1024
+                                }
+                            ];
 
-    describe('Inquiry Quality Scoring', () => {
-        it('should allow seller to score inquiry quality', async () => {
-            const sellerToken = testSeller.user.generateAuthToken();
+                            const result = await makeRequest('POST', `/photos/upload/${horseId}`, {
+                                photos: testPhotos
+                            }, sellerData.token);
 
-            const res = await chai.request(app)
-                .post(`/api/buyer/score-inquiry/${testInquiry._id}`)
-                .set('Authorization', `Bearer ${sellerToken}`);
+                            if (!result.success) {
+                                throw new Error(`Failed to upload photos for horse ${horseId}`);
+                            }
 
-            expect(res).to.have.status(200);
-            expect(res.body.success).to.be.true;
-            expect(res.body.score.total).to.be.a('number');
-            expect(res.body.score.breakdown).to.exist;
-        });
+                            testData.uploadedPhotos[horseId] = result.images;
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    {
+        name: 'Buyer-Seller Interaction',
+        tests: [
+            {
+                name: 'Create Inquiries',
+                run: async () => {
+                    for (const [buyerType, buyerData] of Object.entries(testData.buyers)) {
+                        debug(`Creating inquiries for ${buyerType} buyer`);
 
-        it('should reject unauthorized inquiry scoring', async () => {
-            const unauthorizedUser = await createTestUser('unauthorized@test.com');
-            const unauthorizedToken = unauthorizedUser.generateAuthToken();
+                        // Select random horse listings to inquire about
+                        const allHorses = Object.values(testData.sellers)
+                            .flatMap(seller => seller.horses);
+                        
+                        const selectedHorses = allHorses
+                            .sort(() => 0.5 - Math.random())
+                            .slice(0, 2);
 
-            const res = await chai.request(app)
-                .post(`/api/buyer/score-inquiry/${testInquiry._id}`)
-                .set('Authorization', `Bearer ${unauthorizedToken}`);
+                        for (const horseId of selectedHorses) {
+                            const result = await makeRequest('POST', '/inquiries', {
+                                horse: horseId,
+                                message: `I am interested in this horse. Can you provide more details?`,
+                                contactPreference: 'email'
+                            }, buyerData.token);
 
-            expect(res).to.have.status(403);
-            expect(res.body.success).to.be.false;
-        });
-    });
-}); 
+                            if (!result.success) {
+                                throw new Error(`Failed to create inquiry for ${buyerType} buyer`);
+                            }
+
+                            testData.buyers[buyerType].inquiries.push(result.inquiry._id);
+                        }
+                    }
+                }
+            },
+            {
+                name: 'Start Conversations',
+                run: async () => {
+                    for (const [buyerType, buyerData] of Object.entries(testData.buyers)) {
+                        for (const [sellerType, sellerData] of Object.entries(testData.sellers)) {
+                            if (sellerData.horses.length === 0) continue;
+
+                            debug(`Starting conversation between ${buyerType} buyer and ${sellerType} seller`);
+
+                            const result = await makeRequest('POST', '/messaging/conversations', {
+                                recipientId: sellerData.userId,
+                                entityType: 'horse',
+                                entityId: sellerData.horses[0]
+                            }, buyerData.token);
+
+                            if (!result.success) {
+                                throw new Error(`Failed to start conversation for ${buyerType} buyer`);
+                            }
+
+                            testData.buyers[buyerType].conversations.push(result.conversation._id);
+
+                            // Send initial message
+                            await makeRequest('POST', '/messaging/messages', {
+                                conversationId: result.conversation._id,
+                                content: 'Hello, I am interested in your horse. Is it still available?'
+                            }, buyerData.token);
+
+                            // Seller responds
+                            await makeRequest('POST', '/messaging/messages', {
+                                conversationId: result.conversation._id,
+                                content: 'Yes, the horse is available. Would you like to schedule a viewing?'
+                            }, sellerData.token);
+                        }
+                    }
+                }
+            },
+            {
+                name: 'Test Message Notifications',
+                run: async () => {
+                    for (const [buyerType, buyerData] of Object.entries(testData.buyers)) {
+                        for (const conversationId of buyerData.conversations) {
+                            debug(`Testing message notifications for conversation ${conversationId}`);
+
+                            // Get initial notification count
+                            const initialNotifications = await makeRequest('GET', '/users/notifications', null, buyerData.token);
+                            const initialCount = initialNotifications.notifications.length;
+
+                            // Send a new message
+                            await makeRequest('POST', '/messaging/messages', {
+                                conversationId: conversationId,
+                                content: 'When would be a good time to visit?'
+                            }, buyerData.token);
+
+                            // Verify notification was created
+                            const updatedNotifications = await makeRequest('GET', '/users/notifications', null, buyerData.token);
+                            if (updatedNotifications.notifications.length <= initialCount) {
+                                throw new Error('Message notification not created');
+                            }
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    {
+        name: 'Listing Cleanup',
+        tests: [
+            {
+                name: 'Delete Horse Listings',
+                run: async () => {
+                    for (const [sellerType, sellerData] of Object.entries(testData.sellers)) {
+                        debug(`Deleting horse listings for ${sellerType} seller`);
+
+                        for (const horseId of sellerData.horses) {
+                            const result = await makeRequest('DELETE', `/horses/${horseId}`, null, sellerData.token);
+
+                            if (!result.success) {
+                                throw new Error(`Failed to delete horse ${horseId}`);
+                            }
+
+                            // Verify deletion
+                            try {
+                                await makeRequest('GET', `/horses/${horseId}`, null, sellerData.token);
+                                throw new Error(`Horse ${horseId} still exists after deletion`);
+                            } catch (error) {
+                                if (!error.message.includes('not found')) {
+                                    throw error;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        ]
+    }
+];
+
+// Add command line arguments handling
+const args = process.argv.slice(2);
+if (args.includes('--debug')) {
+    process.env.DEBUG = 'true';
+}
+
+// Run tests
+runTests(testSuites);

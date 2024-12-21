@@ -1,4 +1,12 @@
 const cloudinary = require('cloudinary').v2;
+
+// Configure cloudinary
+cloudinary.config({
+    cloud_name: 'dpscsbadx',
+    api_key: '224559537953498',
+    api_secret: 'FB9Q3VpOEOGvSgeNxM6dSV2Lv80'
+});
+
 const Seller = require('../models/Seller');
 const Horse = require('../models/Horse');
 const ActivityLog = require('../models/ActivityLog');

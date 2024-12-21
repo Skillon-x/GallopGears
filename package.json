@@ -42,9 +42,11 @@
     "express-fileupload": "^1.4.0",
     "express-validator": "^7.0.1",
     "jsonwebtoken": "^9.0.0",
+    "lucide-react": "^0.469.0",
     "mongoose": "^6.10.0",
     "morgan": "^1.10.0",
-    "razorpay": "^2.8.6"
+    "razorpay": "^2.8.6",
+    "react-router-dom": "^7.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.23.7",

@@ -61,21 +61,86 @@ const sellerSchema = new mongoose.Schema({
     subscription: {
         plan: {
             type: String,
-            enum: ['Royal Stallion', 'Gallop', 'Trot'],
-            default: 'Trot'
+            enum: ['Royal Stallion', 'Gallop', 'Trot', null],
+            default: null
         },
         status: {
             type: String,
-            enum: ['active', 'expired', 'cancelled'],
-            default: 'active'
+            enum: ['inactive', 'active', 'expired', 'cancelled'],
+            default: 'inactive'
         },
         startDate: {
             type: Date,
-            default: Date.now
+            default: null
         },
-        expiresAt: {
+        endDate: {
             type: Date,
-            default: () => new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year for starter plan
+            default: null
+        },
+        features: {
+            maxPhotos: {
+                type: Number,
+                default: 0
+            },
+            maxListings: {
+                type: Number,
+                default: 0
+            },
+            listingDuration: {
+                type: Number,
+                default: 0
+            },
+            verificationLevel: {
+                type: String,
+                enum: ['none', 'basic', 'premium'],
+                default: 'none'
+            },
+            virtualStableTour: {
+                type: Boolean,
+                default: false
+            },
+            analytics: {
+                type: Boolean,
+                default: false
+            },
+            homepageSpotlight: {
+                type: Number,
+                default: 0
+            },
+            featuredListingBoosts: {
+                count: {
+                    type: Number,
+                    default: 0
+                },
+                duration: {
+                    type: Number,
+                    default: 0
+                }
+            },
+            priorityPlacement: {
+                type: Boolean,
+                default: false
+            },
+            badges: [{
+                type: String
+            }],
+            searchPlacement: {
+                type: String,
+                enum: ['none', 'basic', 'premium'],
+                default: 'none'
+            },
+            socialMediaSharing: {
+                type: Boolean,
+                default: false
+            },
+            seriousBuyerAccess: {
+                type: Boolean,
+                default: false
+            }
+        },
+        transaction: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Transaction'
         }
     },
     verificationStatus: {
@@ -189,7 +254,9 @@ const sellerSchema = new mongoose.Schema({
         ref: 'Review'
     }]
 }, {
-    timestamps: true
+    timestamps: true,
+    toJSON: { getters: true },
+    toObject: { getters: true }
 });
 
 // Pre-save hook to update statistics
@@ -287,7 +354,7 @@ sellerSchema.methods.getListingLimit = function() {
         case 'Gallop':
             return 10;
         case 'Royal Stallion':
-            return Infinity;
+            return 9999;
         default:
             return 0;
     }

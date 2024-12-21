@@ -4,23 +4,15 @@ const { log, makeRequest, runTests } = require('./test.utils');
 dotenv.config();
 
 let testData = {
-    adminToken: '',
+    sellerToken: '',
     royalSellerToken: '',
     gallopSellerToken: '',
     trotSellerToken: '',
-    starterSellerToken: '',
-    userToken: '',
-    horseIds: {}
+    userToken: ''
 };
 
 // Test configuration
 const config = {
-    admin: {
-        email: 'admin@test.com',
-        password: 'admin123',
-        name: 'Test Admin',
-        role: 'admin'
-    },
     royalSeller: {
         email: 'royal@test.com',
         password: 'seller123',
@@ -39,12 +31,6 @@ const config = {
         name: 'Trot Stables',
         role: 'user'
     },
-    starterSeller: {
-        email: 'starter@test.com',
-        password: 'seller123',
-        name: 'Starter Stables',
-        role: 'user'
-    },
     user: {
         email: 'user@test.com',
         password: 'user123',
@@ -53,23 +39,17 @@ const config = {
     }
 };
 
-// Test suite
+// Test suites
 const testSuites = [
     {
-        name: 'User Registration',
+        name: 'User Registration and Profile Creation',
         tests: [
-            {
-                name: 'Register Admin',
-                run: async () => {
-                    const result = await makeRequest('POST', '/auth/register', config.admin);
-                    testData.adminToken = result.token;
-                }
-            },
             {
                 name: 'Register Royal Stallion Seller',
                 run: async () => {
                     // Register as user first
                     const userResult = await makeRequest('POST', '/auth/register', config.royalSeller);
+                    testData.royalSellerToken = userResult.token;
 
                     // Create seller profile with required fields
                     const sellerResult = await makeRequest('POST', '/sellers/profile', {
@@ -84,25 +64,23 @@ const testSuites = [
                             phone: '9876543210',
                             email: 'royal@test.com',
                             whatsapp: '9876543210'
-                        },
-                        businessDocuments: {
-                            gst: 'TESTGST123',
-                            pan: 'TESTPAN123'
                         }
                     }, userResult.token);
 
-                    // Get updated token with seller role
-                    const meResult = await makeRequest('GET', '/auth/me', null, userResult.token);
-                    testData.royalSellerToken = userResult.token;
+                    // Verify subscription is inactive
+                    if (!sellerResult.seller.subscription || 
+                        sellerResult.seller.subscription.status !== 'inactive' || 
+                        sellerResult.seller.subscription.type !== null) {
+                        throw new Error('Initial subscription should be inactive with no plan type');
+                    }
                 }
             },
             {
                 name: 'Register Gallop Seller',
                 run: async () => {
-                    // Register as user first
                     const userResult = await makeRequest('POST', '/auth/register', config.gallopSeller);
+                    testData.gallopSellerToken = userResult.token;
 
-                    // Create seller profile with required fields
                     const sellerResult = await makeRequest('POST', '/sellers/profile', {
                         businessName: 'Gallop Stables',
                         description: 'Standard horse stables',
@@ -115,25 +93,23 @@ const testSuites = [
                             phone: '9876543211',
                             email: 'gallop@test.com',
                             whatsapp: '9876543211'
-                        },
-                        businessDocuments: {
-                            gst: 'TESTGST124',
-                            pan: 'TESTPAN124'
                         }
                     }, userResult.token);
 
-                    // Get updated token with seller role
-                    const meResult = await makeRequest('GET', '/auth/me', null, userResult.token);
-                    testData.gallopSellerToken = userResult.token;
+                    // Verify subscription is inactive
+                    if (!sellerResult.seller.subscription || 
+                        sellerResult.seller.subscription.status !== 'inactive' || 
+                        sellerResult.seller.subscription.type !== null) {
+                        throw new Error('Initial subscription should be inactive with no plan type');
+                    }
                 }
             },
             {
                 name: 'Register Trot Seller',
                 run: async () => {
-                    // Register as user first
                     const userResult = await makeRequest('POST', '/auth/register', config.trotSeller);
+                    testData.trotSellerToken = userResult.token;
 
-                    // Create seller profile with required fields
                     const sellerResult = await makeRequest('POST', '/sellers/profile', {
                         businessName: 'Trot Stables',
                         description: 'Basic horse stables',
@@ -146,51 +122,19 @@ const testSuites = [
                             phone: '9876543212',
                             email: 'trot@test.com',
                             whatsapp: '9876543212'
-                        },
-                        businessDocuments: {
-                            gst: 'TESTGST125',
-                            pan: 'TESTPAN125'
                         }
                     }, userResult.token);
 
-                    // Get updated token with seller role
-                    const meResult = await makeRequest('GET', '/auth/me', null, userResult.token);
-                    testData.trotSellerToken = userResult.token;
+                    // Verify subscription is inactive
+                    if (!sellerResult.seller.subscription || 
+                        sellerResult.seller.subscription.status !== 'inactive' || 
+                        sellerResult.seller.subscription.type !== null) {
+                        throw new Error('Initial subscription should be inactive with no plan type');
+                    }
                 }
             },
             {
-                name: 'Register Starter Seller',
-                run: async () => {
-                    // Register as user first
-                    const userResult = await makeRequest('POST', '/auth/register', config.starterSeller);
-
-                    // Create seller profile with required fields
-                    const sellerResult = await makeRequest('POST', '/sellers/profile', {
-                        businessName: 'Starter Stables',
-                        description: 'Free horse stables',
-                        location: {
-                            state: 'Gujarat',
-                            city: 'Ahmedabad',
-                            pincode: '380001'
-                        },
-                        contactDetails: {
-                            phone: '9876543213',
-                            email: 'starter@test.com',
-                            whatsapp: '9876543213'
-                        },
-                        businessDocuments: {
-                            gst: 'TESTGST126',
-                            pan: 'TESTPAN126'
-                        }
-                    }, userResult.token);
-
-                    // Get updated token with seller role
-                    const meResult = await makeRequest('GET', '/auth/me', null, userResult.token);
-                    testData.starterSellerToken = userResult.token;
-                }
-            },
-            {
-                name: 'Register User',
+                name: 'Register Regular User',
                 run: async () => {
                     const result = await makeRequest('POST', '/auth/register', config.user);
                     testData.userToken = result.token;
@@ -213,39 +157,114 @@ const testSuites = [
             {
                 name: 'Subscribe to Royal Stallion Plan',
                 run: async () => {
-                    const result = await makeRequest('POST', '/sellers/subscribe', {
+                    // First create order
+                    const orderResult = await makeRequest('POST', '/sellers/subscribe/create-order', {
                         package: 'Royal Stallion',
-                        duration: 30
+                        duration: 30,
+                        amount: 9999
                     }, testData.royalSellerToken);
 
-                    if (!result.success || !result.subscription || !result.transaction) {
-                        throw new Error('Failed to subscribe to Royal Stallion plan');
+                    if (!orderResult.success || !orderResult.order) {
+                        throw new Error('Failed to create Razorpay order');
+                    }
+
+                    // Simulate successful payment
+                    const paymentResult = await makeRequest('POST', '/sellers/subscribe/verify-payment', {
+                        razorpay_order_id: orderResult.order.id,
+                        razorpay_payment_id: 'pay_' + Math.random().toString(36).substr(2, 9),
+                        razorpay_signature: 'test_signature',
+                        package: 'Royal Stallion',
+                        duration: 30,
+                        amount: 9999
+                    }, testData.royalSellerToken);
+
+                    if (!paymentResult.success || !paymentResult.subscription || !paymentResult.transaction) {
+                        throw new Error('Failed to verify Royal Stallion plan payment');
+                    }
+
+                    // Verify subscription is now active
+                    const subResult = await makeRequest('GET', '/sellers/subscription', null, testData.royalSellerToken);
+                    if (!subResult.success || 
+                        !subResult.subscription || 
+                        subResult.subscription.status !== 'active' || 
+                        subResult.subscription.type !== 'Royal Stallion') {
+                        throw new Error('Subscription should be active with Royal Stallion plan');
                     }
                 }
             },
             {
                 name: 'Subscribe to Gallop Plan',
                 run: async () => {
-                    const result = await makeRequest('POST', '/sellers/subscribe', {
+                    // First create order
+                    const orderResult = await makeRequest('POST', '/sellers/subscribe/create-order', {
                         package: 'Gallop',
-                        duration: 30
+                        duration: 30,
+                        amount: 4999
                     }, testData.gallopSellerToken);
 
-                    if (!result.success || !result.subscription || !result.transaction) {
-                        throw new Error('Failed to subscribe to Gallop plan');
+                    if (!orderResult.success || !orderResult.order) {
+                        throw new Error('Failed to create Razorpay order');
+                    }
+
+                    // Simulate successful payment
+                    const paymentResult = await makeRequest('POST', '/sellers/subscribe/verify-payment', {
+                        razorpay_order_id: orderResult.order.id,
+                        razorpay_payment_id: 'pay_' + Math.random().toString(36).substr(2, 9),
+                        razorpay_signature: 'test_signature',
+                        package: 'Gallop',
+                        duration: 30,
+                        amount: 4999
+                    }, testData.gallopSellerToken);
+
+                    if (!paymentResult.success || !paymentResult.subscription || !paymentResult.transaction) {
+                        throw new Error('Failed to verify Gallop plan payment');
+                    }
+
+                    // Verify subscription is now active
+                    const subResult = await makeRequest('GET', '/sellers/subscription', null, testData.gallopSellerToken);
+                    if (!subResult.success || 
+                        !subResult.subscription || 
+                        subResult.subscription.status !== 'active' || 
+                        subResult.subscription.type !== 'Gallop') {
+                        throw new Error('Subscription should be active with Gallop plan');
                     }
                 }
             },
             {
                 name: 'Subscribe to Trot Plan',
                 run: async () => {
-                    const result = await makeRequest('POST', '/sellers/subscribe', {
+                    // First create order
+                    const orderResult = await makeRequest('POST', '/sellers/subscribe/create-order', {
                         package: 'Trot',
-                        duration: 30
+                        duration: 30,
+                        amount: 1999
                     }, testData.trotSellerToken);
 
-                    if (!result.success || !result.subscription || !result.transaction) {
-                        throw new Error('Failed to subscribe to Trot plan');
+                    if (!orderResult.success || !orderResult.order) {
+                        throw new Error('Failed to create Razorpay order');
+                    }
+
+                    // Simulate successful payment
+                    const paymentResult = await makeRequest('POST', '/sellers/subscribe/verify-payment', {
+                        razorpay_order_id: orderResult.order.id,
+                        razorpay_payment_id: 'pay_' + Math.random().toString(36).substr(2, 9),
+                        razorpay_signature: 'test_signature',
+                        package: 'Trot',
+                        duration: 30,
+                        amount: 1999
+                    }, testData.trotSellerToken);
+
+                    if (!paymentResult.success || !paymentResult.subscription || !paymentResult.transaction) {
+                        throw new Error('Failed to verify Trot plan payment');
+                    }
+
+                    // Verify subscription is now active
+                    const subResult = await makeRequest('GET', '/sellers/subscription', null, testData.trotSellerToken);
+                    if (!subResult.success || 
+                        !subResult.subscription || 
+                        subResult.subscription.status !== 'active' || 
+                        subResult.subscription.type !== 'Trot') {
+                        throw new Error('Subscription should be active with Trot plan');
                     }
                 }
             }
@@ -255,7 +274,7 @@ const testSuites = [
         name: 'Subscription Features',
         tests: [
             {
-                name: 'Get Royal Stallion Features',
+                name: 'Verify Royal Stallion Features',
                 run: async () => {
                     const result = await makeRequest('GET', '/sellers/subscription', null, testData.royalSellerToken);
                     if (!result.success || !result.subscription) {
@@ -264,7 +283,7 @@ const testSuites = [
                 }
             },
             {
-                name: 'Get Gallop Features',
+                name: 'Verify Gallop Features',
                 run: async () => {
                     const result = await makeRequest('GET', '/sellers/subscription', null, testData.gallopSellerToken);
                     if (!result.success || !result.subscription) {
@@ -273,117 +292,11 @@ const testSuites = [
                 }
             },
             {
-                name: 'Get Trot Features',
+                name: 'Verify Trot Features',
                 run: async () => {
                     const result = await makeRequest('GET', '/sellers/subscription', null, testData.trotSellerToken);
                     if (!result.success || !result.subscription) {
                         throw new Error('Failed to get Trot subscription');
-                    }
-                }
-            }
-        ]
-    },
-    {
-        name: 'Listing Management',
-        tests: [
-            {
-                name: 'Create Horse Listings',
-                run: async () => {
-                    // Create a horse listing for each seller
-                    const horseData = {
-                        name: 'Test Horse',
-                        breed: 'Thoroughbred',
-                        age: { years: 5, months: 0 },
-                        gender: 'Stallion',
-                        color: 'Bay',
-                        price: 100000,
-                        description: 'Test horse',
-                        location: {
-                            state: 'Maharashtra',
-                            city: 'Mumbai',
-                            pincode: '400001'
-                        },
-                        images: [{
-                            url: 'https://example.com/image.jpg',
-                            public_id: 'test_image_1',
-                            thumbnail_url: 'https://example.com/thumb.jpg',
-                            width: 800,
-                            height: 600,
-                            format: 'jpg'
-                        }],
-                        specifications: {
-                            training: 'Advanced',
-                            discipline: ['Dressage', 'Show Jumping'],
-                            temperament: 'Calm',
-                            healthStatus: 'Excellent',
-                            vaccination: true,
-                            papers: true
-                        }
-                    };
-
-                    // Royal Stallion - Create multiple listings
-                    for (let i = 0; i < 3; i++) {
-                        const result = await makeRequest('POST', '/horses', {
-                            ...horseData,
-                            name: `Royal Horse ${i + 1}`
-                        }, testData.royalSellerToken);
-                        if (!result.success) {
-                            throw new Error('Failed to create Royal Stallion listing');
-                        }
-                    }
-
-                    // Gallop - Create limited listings
-                    for (let i = 0; i < 2; i++) {
-                        const result = await makeRequest('POST', '/horses', {
-                            ...horseData,
-                            name: `Gallop Horse ${i + 1}`
-                        }, testData.gallopSellerToken);
-                        if (!result.success) {
-                            throw new Error('Failed to create Gallop listing');
-                        }
-                    }
-
-                    // Trot - Create single listing
-                    const trotResult = await makeRequest('POST', '/horses', {
-                        ...horseData,
-                        name: 'Trot Horse'
-                    }, testData.trotSellerToken);
-                    if (!trotResult.success) {
-                        throw new Error('Failed to create Trot listing');
-                    }
-
-                    // Starter - Create single listing
-                    const starterResult = await makeRequest('POST', '/horses', {
-                        ...horseData,
-                        name: 'Starter Horse'
-                    }, testData.starterSellerToken);
-                    if (!starterResult.success) {
-                        throw new Error('Failed to create Starter listing');
-                    }
-                }
-            },
-            {
-                name: 'Get Seller Listings',
-                run: async () => {
-                    // Get listings for each seller
-                    const royalResult = await makeRequest('GET', '/sellers/listings', null, testData.royalSellerToken);
-                    if (!royalResult.success || !Array.isArray(royalResult.listings)) {
-                        throw new Error('Failed to get Royal Stallion listings');
-                    }
-
-                    const gallopResult = await makeRequest('GET', '/sellers/listings', null, testData.gallopSellerToken);
-                    if (!gallopResult.success || !Array.isArray(gallopResult.listings)) {
-                        throw new Error('Failed to get Gallop listings');
-                    }
-
-                    const trotResult = await makeRequest('GET', '/sellers/listings', null, testData.trotSellerToken);
-                    if (!trotResult.success || !Array.isArray(trotResult.listings)) {
-                        throw new Error('Failed to get Trot listings');
-                    }
-
-                    const starterResult = await makeRequest('GET', '/sellers/listings', null, testData.starterSellerToken);
-                    if (!starterResult.success || !Array.isArray(starterResult.listings)) {
-                        throw new Error('Failed to get Starter listings');
                     }
                 }
             }

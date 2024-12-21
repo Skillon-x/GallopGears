@@ -17,7 +17,77 @@ let testData = {
     horseId: '',
     paymentId: '',
     subscriptionId: '',
-    sellerId: ''
+    sellerId: '',
+    royalToken: '',
+    royalSellerToken: '',
+    royalSellerId: '',
+    royalOrderId: '',
+    gallopToken: '',
+    gallopSellerToken: '',
+    gallopSellerId: '',
+    gallopOrderId: '',
+    trotToken: '',
+    trotSellerToken: '',
+    trotSellerId: '',
+    trotOrderId: ''
+};
+
+// Subscription features by plan
+const SUBSCRIPTION_FEATURES = {
+    'Royal Stallion': {
+        maxPhotos: 20,
+        maxListings: 9999,
+        listingDuration: 90,
+        verificationLevel: 'premium',
+        virtualStableTour: true,
+        analytics: true,
+        homepageSpotlight: 5,
+        featuredListingBoosts: {
+            count: 3,
+            duration: 7
+        },
+        priorityPlacement: true,
+        badges: ['Top Seller', 'Premium Stable'],
+        searchPlacement: 'premium',
+        socialMediaSharing: true,
+        seriousBuyerAccess: true
+    },
+    'Gallop': {
+        maxPhotos: 10,
+        maxListings: 10,
+        listingDuration: 60,
+        verificationLevel: 'basic',
+        virtualStableTour: false,
+        analytics: true,
+        homepageSpotlight: 2,
+        featuredListingBoosts: {
+            count: 1,
+            duration: 5
+        },
+        priorityPlacement: false,
+        badges: ['Verified Seller'],
+        searchPlacement: 'basic',
+        socialMediaSharing: true,
+        seriousBuyerAccess: false
+    },
+    'Trot': {
+        maxPhotos: 5,
+        maxListings: 5,
+        listingDuration: 30,
+        verificationLevel: 'basic',
+        virtualStableTour: false,
+        analytics: false,
+        homepageSpotlight: 0,
+        featuredListingBoosts: {
+            count: 0,
+            duration: 0
+        },
+        priorityPlacement: false,
+        badges: ['Basic Seller'],
+        searchPlacement: 'basic',
+        socialMediaSharing: false,
+        seriousBuyerAccess: false
+    }
 };
 
 // Test suites
@@ -47,6 +117,7 @@ const testSuites = [
                 name: 'Create Seller Profile',
                 run: async () => {
                     debug('Creating seller profile');
+                    debug('Using token:', testData.userToken);
                     const result = await makeRequest('POST', '/sellers/profile', {
                         businessName: 'Journey Test Stables',
                         description: 'Premium horse stables for testing',
@@ -59,10 +130,6 @@ const testSuites = [
                             phone: '9876543210',
                             email: 'journey@seller.com',
                             whatsapp: '9876543210'
-                        },
-                        businessDocuments: {
-                            gst: 'TESTGST123',
-                            pan: 'TESTPAN123'
                         }
                     }, testData.userToken);
 
@@ -71,15 +138,39 @@ const testSuites = [
                         throw new Error('Failed to create seller profile');
                     }
 
-                    // Get updated token with seller role
-                    debug('Getting updated user info');
-                    const meResult = await makeRequest('GET', '/auth/me', null, testData.userToken);
-                    debug('User info response:', meResult);
-                    
-                    if (!meResult.success || meResult.user.role !== 'seller') {
-                        throw new Error('Failed to assign seller role');
+                    // Verify subscription is inactive with default features
+                    if (!result.seller.subscription || 
+                        result.seller.subscription.status !== 'inactive' || 
+                        result.seller.subscription.plan !== null ||
+                        !result.seller.subscription.features) {
+                        throw new Error('Invalid initial subscription state');
                     }
-                    testData.sellerToken = testData.userToken;
+
+                    // Verify default features
+                    const features = result.seller.subscription.features;
+                    if (features.maxPhotos !== 0 ||
+                        features.maxListings !== 0 ||
+                        features.listingDuration !== 0 ||
+                        features.verificationLevel !== 'none' ||
+                        features.virtualStableTour !== false ||
+                        features.analytics !== false ||
+                        features.homepageSpotlight !== 0 ||
+                        features.featuredListingBoosts.count !== 0 ||
+                        features.featuredListingBoosts.duration !== 0 ||
+                        features.priorityPlacement !== false ||
+                        features.searchPlacement !== 'none' ||
+                        features.socialMediaSharing !== false ||
+                        features.seriousBuyerAccess !== false) {
+                        throw new Error('Invalid initial subscription features');
+                    }
+
+                    // Store the new token with seller role
+                    testData.sellerToken = result.token;
+                    testData.sellerId = result.seller._id;
+                    debug('Updated seller token and ID:', { 
+                        token: testData.sellerToken,
+                        sellerId: testData.sellerId 
+                    });
                 }
             },
             {
@@ -92,26 +183,83 @@ const testSuites = [
                 }
             },
             {
-                name: 'Create Payment for Premium Plan',
+                name: 'Subscribe to Trot Plan',
                 run: async () => {
                     const result = await makeRequest('POST', '/sellers/subscribe', {
                         package: 'Trot',
                         duration: 30
                     }, testData.sellerToken);
 
-                    if (!result.success || !result.transaction) {
+                    if (!result.success || !result.subscription) {
                         throw new Error('Failed to create subscription');
                     }
-                    testData.subscriptionId = result.transaction._id;
+
+                    // Verify subscription features are updated
+                    const features = result.subscription.features;
+                    const expectedFeatures = SUBSCRIPTION_FEATURES['Trot'];
+                    
+                    if (features.maxPhotos !== expectedFeatures.maxPhotos ||
+                        features.maxListings !== expectedFeatures.maxListings ||
+                        features.listingDuration !== expectedFeatures.listingDuration ||
+                        features.verificationLevel !== expectedFeatures.verificationLevel ||
+                        features.virtualStableTour !== expectedFeatures.virtualStableTour ||
+                        features.analytics !== expectedFeatures.analytics ||
+                        features.homepageSpotlight !== expectedFeatures.homepageSpotlight ||
+                        features.featuredListingBoosts.count !== expectedFeatures.featuredListingBoosts.count ||
+                        features.featuredListingBoosts.duration !== expectedFeatures.featuredListingBoosts.duration ||
+                        features.priorityPlacement !== expectedFeatures.priorityPlacement ||
+                        features.searchPlacement !== expectedFeatures.searchPlacement ||
+                        features.socialMediaSharing !== expectedFeatures.socialMediaSharing ||
+                        features.seriousBuyerAccess !== expectedFeatures.seriousBuyerAccess) {
+                        throw new Error('Subscription features not properly updated');
+                    }
+
+                    testData.subscriptionId = result.subscription._id;
                 }
             },
             {
-                name: 'Verify Payment',
+                name: 'Verify Subscription Status',
                 run: async () => {
-                    const result = await makeRequest('GET', `/sellers/subscription`, null, testData.sellerToken);
+                    const result = await makeRequest('GET', '/sellers/subscription', null, testData.sellerToken);
                     
                     if (!result.success || !result.subscription) {
                         throw new Error('Failed to verify subscription');
+                    }
+
+                    // Verify subscription is active with correct plan
+                    if (result.subscription.status !== 'active' || 
+                        result.subscription.plan !== 'Trot') {
+                        throw new Error('Invalid subscription status or plan');
+                    }
+
+                    // Verify essential features match Trot plan
+                    const features = result.subscription.features;
+                    const expectedFeatures = SUBSCRIPTION_FEATURES['Trot'];
+                    
+                    const essentialFeatures = [
+                        'maxPhotos',
+                        'maxListings',
+                        'listingDuration',
+                        'verificationLevel',
+                        'virtualStableTour',
+                        'analytics',
+                        'homepageSpotlight',
+                        'priorityPlacement',
+                        'searchPlacement',
+                        'socialMediaSharing',
+                        'seriousBuyerAccess'
+                    ];
+
+                    for (const feature of essentialFeatures) {
+                        if (features[feature] !== expectedFeatures[feature]) {
+                            throw new Error(`Feature mismatch: ${feature} - Expected ${expectedFeatures[feature]}, got ${features[feature]}`);
+                        }
+                    }
+
+                    // Verify featuredListingBoosts
+                    if (features.featuredListingBoosts.count !== expectedFeatures.featuredListingBoosts.count ||
+                        features.featuredListingBoosts.duration !== expectedFeatures.featuredListingBoosts.duration) {
+                        throw new Error('Featured listing boosts do not match');
                     }
                 }
             }
@@ -132,6 +280,34 @@ const testSuites = [
                     const { dashboard } = result;
                     if (!dashboard.subscription || !dashboard.listings || !dashboard.inquiries || !dashboard.transactions) {
                         throw new Error('Invalid dashboard structure');
+                    }
+                }
+            },
+            {
+                name: 'Get Seller Profile',
+                run: async () => {
+                    debug('Fetching seller profile');
+                    const result = await makeRequest('GET', '/sellers/me', null, testData.sellerToken);
+                    console.log(result);
+                    debug('Seller profile response:', result);
+                    if (!result.success || !result.seller) {
+                        throw new Error('Failed to get seller profile');
+                    }
+
+                    // Verify profile structure
+                    const { seller } = result;
+                    if (!seller.businessName || !seller.contactDetails || !seller.location || !seller.subscription) {
+                        throw new Error('Invalid seller profile structure');
+                    }
+
+                    // Verify contact details
+                    if (!seller.contactDetails.email || !seller.contactDetails.phone) {
+                        throw new Error('Missing required contact details');
+                    }
+
+                    // Verify location
+                    if (!seller.location.state || !seller.location.city || !seller.location.pincode) {
+                        throw new Error('Missing required location details');
                     }
                 }
             },
@@ -332,6 +508,374 @@ const testSuites = [
 
                     if (result.analytics.totalInquiries === 0) {
                         throw new Error('No inquiries in analytics');
+                    }
+                }
+            }
+        ]
+    },
+    {
+        name: 'Royal Stallion Subscription Journey',
+        tests: [
+            {
+                name: 'Register Royal Stallion Seller',
+                run: async () => {
+                    debug('Registering Royal Stallion seller');
+                    const result = await makeRequest('POST', '/auth/register', {
+                        name: 'Royal Stallion Seller',
+                        email: 'royal@seller.com',
+                        password: 'royal123',
+                        role: 'user'
+                    });
+
+                    if (!result.success || !result.token) {
+                        throw new Error('Failed to register Royal Stallion seller');
+                    }
+                    testData.royalToken = result.token;
+                }
+            },
+            {
+                name: 'Create Royal Stallion Profile',
+                run: async () => {
+                    debug('Creating Royal Stallion profile');
+                    const result = await makeRequest('POST', '/sellers/profile', {
+                        businessName: 'Royal Stallion Stables',
+                        description: 'Premium horse stables for elite horses',
+                        location: {
+                            state: 'Maharashtra',
+                            city: 'Mumbai',
+                            pincode: '400001'
+                        },
+                        contactDetails: {
+                            phone: '9876543210',
+                            email: 'royal@seller.com',
+                            whatsapp: '9876543210'
+                        }
+                    }, testData.royalToken);
+
+                    if (!result.success) {
+                        throw new Error('Failed to create Royal Stallion profile');
+                    }
+                    testData.royalSellerToken = result.token;
+                    testData.royalSellerId = result.seller._id;
+                }
+            },
+            {
+                name: 'Create Razorpay Order for Royal Stallion',
+                run: async () => {
+                    const result = await makeRequest('POST', '/sellers/subscribe/create-order', {
+                        package: 'Royal Stallion',
+                        duration: 30,
+                        amount: 9999
+                    }, testData.royalSellerToken);
+
+                    if (!result.success || !result.order) {
+                        throw new Error('Failed to create Razorpay order for Royal Stallion');
+                    }
+                    testData.royalOrderId = result.order.id;
+                }
+            },
+            {
+                name: 'Verify Royal Stallion Payment',
+                run: async () => {
+                    const result = await makeRequest('POST', '/sellers/subscribe/verify-payment', {
+                        razorpay_order_id: testData.royalOrderId,
+                        razorpay_payment_id: 'test_royal_pay_' + Date.now(),
+                        razorpay_signature: 'test_signature',
+                        package: 'Royal Stallion',
+                        duration: 30,
+                        amount: 9999
+                    }, testData.royalSellerToken);
+
+                    if (!result.success || !result.subscription) {
+                        throw new Error('Failed to verify Royal Stallion payment');
+                    }
+
+                    // Verify Royal Stallion features
+                    const features = result.subscription.features;
+                    const expectedFeatures = SUBSCRIPTION_FEATURES['Royal Stallion'];
+                    
+                    if (features.maxPhotos !== expectedFeatures.maxPhotos ||
+                        features.maxListings !== expectedFeatures.maxListings ||
+                        features.listingDuration !== expectedFeatures.listingDuration ||
+                        features.verificationLevel !== expectedFeatures.verificationLevel ||
+                        features.virtualStableTour !== expectedFeatures.virtualStableTour ||
+                        features.analytics !== expectedFeatures.analytics ||
+                        features.homepageSpotlight !== expectedFeatures.homepageSpotlight ||
+                        features.priorityPlacement !== expectedFeatures.priorityPlacement ||
+                        features.searchPlacement !== expectedFeatures.searchPlacement ||
+                        features.socialMediaSharing !== expectedFeatures.socialMediaSharing ||
+                        features.seriousBuyerAccess !== expectedFeatures.seriousBuyerAccess) {
+                        throw new Error('Royal Stallion features not properly set');
+                    }
+                }
+            }
+        ]
+    },
+    {
+        name: 'Gallop Subscription Journey',
+        tests: [
+            {
+                name: 'Register Gallop Seller',
+                run: async () => {
+                    debug('Registering Gallop seller');
+                    const result = await makeRequest('POST', '/auth/register', {
+                        name: 'Gallop Seller',
+                        email: 'gallop@seller.com',
+                        password: 'gallop123',
+                        role: 'user'
+                    });
+
+                    if (!result.success || !result.token) {
+                        throw new Error('Failed to register Gallop seller');
+                    }
+                    testData.gallopToken = result.token;
+                }
+            },
+            {
+                name: 'Create Gallop Profile',
+                run: async () => {
+                    debug('Creating Gallop profile');
+                    const result = await makeRequest('POST', '/sellers/profile', {
+                        businessName: 'Gallop Stables',
+                        description: 'Professional horse stables',
+                        location: {
+                            state: 'Maharashtra',
+                            city: 'Pune',
+                            pincode: '411001'
+                        },
+                        contactDetails: {
+                            phone: '9876543211',
+                            email: 'gallop@seller.com',
+                            whatsapp: '9876543211'
+                        }
+                    }, testData.gallopToken);
+
+                    if (!result.success) {
+                        throw new Error('Failed to create Gallop profile');
+                    }
+                    testData.gallopSellerToken = result.token;
+                    testData.gallopSellerId = result.seller._id;
+                }
+            },
+            {
+                name: 'Create Razorpay Order for Gallop',
+                run: async () => {
+                    const result = await makeRequest('POST', '/sellers/subscribe/create-order', {
+                        package: 'Gallop',
+                        duration: 30,
+                        amount: 4999
+                    }, testData.gallopSellerToken);
+
+                    if (!result.success || !result.order) {
+                        throw new Error('Failed to create Razorpay order for Gallop');
+                    }
+                    testData.gallopOrderId = result.order.id;
+                }
+            },
+            {
+                name: 'Verify Gallop Payment',
+                run: async () => {
+                    const result = await makeRequest('POST', '/sellers/subscribe/verify-payment', {
+                        razorpay_order_id: testData.gallopOrderId,
+                        razorpay_payment_id: 'test_gallop_pay_' + Date.now(),
+                        razorpay_signature: 'test_signature',
+                        package: 'Gallop',
+                        duration: 30,
+                        amount: 4999
+                    }, testData.gallopSellerToken);
+
+                    if (!result.success || !result.subscription) {
+                        throw new Error('Failed to verify Gallop payment');
+                    }
+
+                    // Verify Gallop features
+                    const features = result.subscription.features;
+                    const expectedFeatures = SUBSCRIPTION_FEATURES['Gallop'];
+                    
+                    if (features.maxPhotos !== expectedFeatures.maxPhotos ||
+                        features.maxListings !== expectedFeatures.maxListings ||
+                        features.listingDuration !== expectedFeatures.listingDuration ||
+                        features.verificationLevel !== expectedFeatures.verificationLevel ||
+                        features.virtualStableTour !== expectedFeatures.virtualStableTour ||
+                        features.analytics !== expectedFeatures.analytics ||
+                        features.homepageSpotlight !== expectedFeatures.homepageSpotlight ||
+                        features.priorityPlacement !== expectedFeatures.priorityPlacement ||
+                        features.searchPlacement !== expectedFeatures.searchPlacement ||
+                        features.socialMediaSharing !== expectedFeatures.socialMediaSharing ||
+                        features.seriousBuyerAccess !== expectedFeatures.seriousBuyerAccess) {
+                        throw new Error('Gallop features not properly set');
+                    }
+                }
+            }
+        ]
+    },
+    {
+        name: 'Trot Subscription Journey',
+        tests: [
+            {
+                name: 'Register Trot Seller',
+                run: async () => {
+                    debug('Registering Trot seller');
+                    const result = await makeRequest('POST', '/auth/register', {
+                        name: 'Trot Seller',
+                        email: 'trot@seller.com',
+                        password: 'trot123',
+                        role: 'user'
+                    });
+
+                    if (!result.success || !result.token) {
+                        throw new Error('Failed to register Trot seller');
+                    }
+                    testData.trotToken = result.token;
+                }
+            },
+            {
+                name: 'Create Trot Profile',
+                run: async () => {
+                    debug('Creating Trot profile');
+                    const result = await makeRequest('POST', '/sellers/profile', {
+                        businessName: 'Trot Stables',
+                        description: 'Basic horse stables',
+                        location: {
+                            state: 'Maharashtra',
+                            city: 'Nashik',
+                            pincode: '422001'
+                        },
+                        contactDetails: {
+                            phone: '9876543212',
+                            email: 'trot@seller.com',
+                            whatsapp: '9876543212'
+                        }
+                    }, testData.trotToken);
+
+                    if (!result.success) {
+                        throw new Error('Failed to create Trot profile');
+                    }
+                    testData.trotSellerToken = result.token;
+                    testData.trotSellerId = result.seller._id;
+                }
+            },
+            {
+                name: 'Create Razorpay Order for Trot',
+                run: async () => {
+                    const result = await makeRequest('POST', '/sellers/subscribe/create-order', {
+                        package: 'Trot',
+                        duration: 30,
+                        amount: 1999
+                    }, testData.trotSellerToken);
+
+                    if (!result.success || !result.order) {
+                        throw new Error('Failed to create Razorpay order for Trot');
+                    }
+                    testData.trotOrderId = result.order.id;
+                }
+            },
+            {
+                name: 'Verify Trot Payment',
+                run: async () => {
+                    const result = await makeRequest('POST', '/sellers/subscribe/verify-payment', {
+                        razorpay_order_id: testData.trotOrderId,
+                        razorpay_payment_id: 'test_trot_pay_' + Date.now(),
+                        razorpay_signature: 'test_signature',
+                        package: 'Trot',
+                        duration: 30,
+                        amount: 1999
+                    }, testData.trotSellerToken);
+
+                    if (!result.success || !result.subscription) {
+                        throw new Error('Failed to verify Trot payment');
+                    }
+
+                    // Verify Trot features
+                    const features = result.subscription.features;
+                    const expectedFeatures = SUBSCRIPTION_FEATURES['Trot'];
+                    
+                    if (features.maxPhotos !== expectedFeatures.maxPhotos ||
+                        features.maxListings !== expectedFeatures.maxListings ||
+                        features.listingDuration !== expectedFeatures.listingDuration ||
+                        features.verificationLevel !== expectedFeatures.verificationLevel ||
+                        features.virtualStableTour !== expectedFeatures.virtualStableTour ||
+                        features.analytics !== expectedFeatures.analytics ||
+                        features.homepageSpotlight !== expectedFeatures.homepageSpotlight ||
+                        features.priorityPlacement !== expectedFeatures.priorityPlacement ||
+                        features.searchPlacement !== expectedFeatures.searchPlacement ||
+                        features.socialMediaSharing !== expectedFeatures.socialMediaSharing ||
+                        features.seriousBuyerAccess !== expectedFeatures.seriousBuyerAccess) {
+                        throw new Error('Trot features not properly set');
+                    }
+                }
+            }
+        ]
+    },
+    {
+        name: 'Subscription Feature Verification',
+        tests: [
+            {
+                name: 'Verify Royal Stallion Features',
+                run: async () => {
+                    const result = await makeRequest('GET', '/sellers/subscription', null, testData.royalSellerToken);
+                    if (!result.success || !result.subscription) {
+                        throw new Error('Failed to get Royal Stallion subscription');
+                    }
+
+                    const features = result.subscription.features;
+                    if (features.maxListings !== 9999 ||
+                        features.maxPhotos !== 20 ||
+                        features.listingDuration !== 90 ||
+                        !features.virtualStableTour ||
+                        !features.analytics ||
+                        features.homepageSpotlight !== 5 ||
+                        !features.priorityPlacement ||
+                        features.searchPlacement !== 'premium' ||
+                        !features.socialMediaSharing ||
+                        !features.seriousBuyerAccess) {
+                        throw new Error('Invalid Royal Stallion features');
+                    }
+                }
+            },
+            {
+                name: 'Verify Gallop Features',
+                run: async () => {
+                    const result = await makeRequest('GET', '/sellers/subscription', null, testData.gallopSellerToken);
+                    if (!result.success || !result.subscription) {
+                        throw new Error('Failed to get Gallop subscription');
+                    }
+
+                    const features = result.subscription.features;
+                    if (features.maxListings !== 10 ||
+                        features.maxPhotos !== 10 ||
+                        features.listingDuration !== 60 ||
+                        features.virtualStableTour !== false ||
+                        !features.analytics ||
+                        features.homepageSpotlight !== 2 ||
+                        features.priorityPlacement !== false ||
+                        features.searchPlacement !== 'basic' ||
+                        !features.socialMediaSharing ||
+                        features.seriousBuyerAccess !== false) {
+                        throw new Error('Invalid Gallop features');
+                    }
+                }
+            },
+            {
+                name: 'Verify Trot Features',
+                run: async () => {
+                    const result = await makeRequest('GET', '/sellers/subscription', null, testData.trotSellerToken);
+                    if (!result.success || !result.subscription) {
+                        throw new Error('Failed to get Trot subscription');
+                    }
+
+                    const features = result.subscription.features;
+                    if (features.maxListings !== 5 ||
+                        features.maxPhotos !== 5 ||
+                        features.listingDuration !== 30 ||
+                        features.virtualStableTour !== false ||
+                        features.analytics !== false ||
+                        features.homepageSpotlight !== 0 ||
+                        features.priorityPlacement !== false ||
+                        features.searchPlacement !== 'basic' ||
+                        features.socialMediaSharing !== false ||
+                        features.seriousBuyerAccess !== false) {
+                        throw new Error('Invalid Trot features');
                     }
                 }
             }

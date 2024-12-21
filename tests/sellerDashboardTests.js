@@ -286,4 +286,4 @@ if (args.includes('--debug')) {
 }
 
 // Run tests
-runTests(testSuites); 
+runTests(testSuites);

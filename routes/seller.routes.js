@@ -6,6 +6,9 @@ const User = require('../models/User');
 const Transaction = require('../models/Transaction');
 const ActivityLog = require('../models/ActivityLog');
 const { validateSubscription } = require('../src/utils/validation');
+const { createOrder, verifyPayment } = require('../controllers/payment.controller');
+const jwt = require('jsonwebtoken');
+const { SUBSCRIPTION_FEATURES } = require('../models/Subscription');
 
 const {
     getMe,
@@ -28,42 +31,103 @@ router.get('/plans', async (req, res) => {
     try {
         const plans = [
             {
-                id: 'starter',
-                name: 'Starter',
+                id: 'free',
+                name: 'Free',
                 price: 0,
-                features: [
-                    'Up to 2 horse listings',
-                    'Basic analytics',
-                    'Email support'
-                ],
-                duration: 'forever'
-            },
-            {
-                id: 'gallop',
-                name: 'Gallop',
-                price: 4999,
-                features: [
-                    'Up to 10 horse listings',
-                    'Advanced analytics',
-                    'Priority email support',
-                    'Featured listings',
-                    'Social media promotion'
-                ],
-                duration: '30 days'
+                features: {
+                    ...SUBSCRIPTION_FEATURES['Free'],
+                    maxListings: '1 listing',
+                    maxPhotos: '3 photos per listing',
+                    listingDuration: '15 days listing duration',
+                    verificationLevel: 'Basic verification',
+                    virtualStableTour: 'Not included',
+                    analytics: 'Not included',
+                    homepageSpotlight: 'Not included',
+                    featuredListingBoosts: {
+                        count: 'Not included',
+                        duration: 'Not included'
+                    },
+                    priorityPlacement: 'Standard placement',
+                    badges: ['Basic Seller'],
+                    searchPlacement: 'Basic search placement',
+                    socialMediaSharing: 'Not included',
+                    seriousBuyerAccess: 'Not included'
+                },
+                duration: 'Unlimited'
             },
             {
                 id: 'royal_stallion',
                 name: 'Royal Stallion',
                 price: 9999,
-                features: [
-                    'Unlimited horse listings',
-                    'Premium analytics',
-                    '24/7 priority support',
-                    'Featured listings',
-                    'Social media promotion',
-                    'Custom branding',
-                    'Verified seller badge'
-                ],
+                features: {
+                    ...SUBSCRIPTION_FEATURES['Royal Stallion'],
+                    maxListings: '9999 listings',
+                    maxPhotos: '20 photos per listing',
+                    listingDuration: '90 days listing duration',
+                    verificationLevel: 'Premium verification',
+                    virtualStableTour: 'Virtual stable tour',
+                    analytics: 'Advanced analytics',
+                    homepageSpotlight: '5 homepage spotlight slots',
+                    featuredListingBoosts: {
+                        count: '3 featured listing boosts',
+                        duration: '7 days per boost'
+                    },
+                    priorityPlacement: 'Priority placement in search',
+                    badges: ['Top Seller', 'Premium Stable'],
+                    searchPlacement: 'Premium search placement',
+                    socialMediaSharing: 'Social media promotion',
+                    seriousBuyerAccess: 'Serious buyer access'
+                },
+                duration: '30 days'
+            },
+            {
+                id: 'gallop',
+                name: 'Gallop',
+                price: 4999,
+                features: {
+                    ...SUBSCRIPTION_FEATURES['Gallop'],
+                    maxListings: '10 listings',
+                    maxPhotos: '10 photos per listing',
+                    listingDuration: '60 days listing duration',
+                    verificationLevel: 'Basic verification',
+                    virtualStableTour: 'Not included',
+                    analytics: 'Basic analytics',
+                    homepageSpotlight: '2 homepage spotlight slots',
+                    featuredListingBoosts: {
+                        count: '1 featured listing boost',
+                        duration: '5 days per boost'
+                    },
+                    priorityPlacement: 'Standard placement',
+                    badges: ['Verified Seller'],
+                    searchPlacement: 'Standard search placement',
+                    socialMediaSharing: 'Social media sharing',
+                    seriousBuyerAccess: 'Not included'
+                },
+                duration: '30 days'
+            },
+            {
+                id: 'trot',
+                name: 'Trot',
+                price: 1999,
+                features: {
+                    ...SUBSCRIPTION_FEATURES['Trot'],
+                    maxListings: '5 listings',
+                    maxPhotos: '5 photos per listing',
+                    listingDuration: '30 days listing duration',
+                    verificationLevel: 'Basic verification',
+                    virtualStableTour: 'Not included',
+                    analytics: 'Not included',
+                    homepageSpotlight: 'Not included',
+                    featuredListingBoosts: {
+                        count: 'Not included',
+                        duration: 'Not included'
+                    },
+                    priorityPlacement: 'Standard placement',
+                    badges: ['Basic Seller'],
+                    searchPlacement: 'Standard search placement',
+                    socialMediaSharing: 'Not included',
+                    seriousBuyerAccess: 'Not included'
+                },
                 duration: '30 days'
             }
         ];
@@ -87,7 +151,7 @@ router.post('/subscribe', protect, authorize('seller'), async (req, res) => {
         const { package: packageName, duration } = req.body;
 
         // Validate package
-        const validPackages = ['Royal Stallion', 'Gallop', 'Trot'];
+        const validPackages = ['Free', 'Royal Stallion', 'Gallop', 'Trot'];
         if (!validPackages.includes(packageName)) {
             return res.status(400).json({
                 success: false,
@@ -95,18 +159,48 @@ router.post('/subscribe', protect, authorize('seller'), async (req, res) => {
             });
         }
 
+        // Get features for the package
+        const features = SUBSCRIPTION_FEATURES[packageName];
+        if (!features) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid subscription package'
+            });
+        }
+
+        // Create exact feature object
+        const subscriptionFeatures = {
+            maxPhotos: features.maxPhotos,
+            maxListings: features.maxListings,
+            listingDuration: features.listingDuration,
+            verificationLevel: features.verificationLevel,
+            virtualStableTour: features.virtualStableTour,
+            analytics: features.analytics,
+            homepageSpotlight: features.homepageSpotlight,
+            featuredListingBoosts: {
+                count: features.featuredListingBoosts.count,
+                duration: features.featuredListingBoosts.duration
+            },
+            priorityPlacement: features.priorityPlacement,
+            badges: [...features.badges],
+            searchPlacement: features.searchPlacement,
+            socialMediaSharing: features.socialMediaSharing,
+            seriousBuyerAccess: features.seriousBuyerAccess
+        };
+
         // Create subscription transaction
         const transaction = await Transaction.create({
             seller: req.user._id,
             type: 'subscription',
             amount: packageName === 'Royal Stallion' ? 9999 : 
-                    packageName === 'Gallop' ? 4999 : 999,
-            status: 'pending',
+                    packageName === 'Gallop' ? 4999 : 
+                    packageName === 'Trot' ? 1999 : 0,
+            status: 'completed',
             subscriptionDetails: {
                 package: packageName,
-                duration: duration || 30, // Default to 30 days
+                duration: packageName === 'Free' ? 'Unlimited' : (duration || 30),
                 startDate: new Date(),
-                endDate: new Date(Date.now() + (duration || 30) * 24 * 60 * 60 * 1000)
+                endDate: packageName === 'Free' ? null : new Date(Date.now() + (duration || 30) * 24 * 60 * 60 * 1000)
             }
         });
 
@@ -119,11 +213,15 @@ router.post('/subscribe', protect, authorize('seller'), async (req, res) => {
                     startDate: new Date(),
                     endDate: new Date(Date.now() + (duration || 30) * 24 * 60 * 60 * 1000),
                     status: 'active',
-                    transaction: transaction._id
+                    transaction: transaction._id,
+                    features: subscriptionFeatures
                 }
             },
-            { new: true }
-        );
+            { 
+                new: true,
+                runValidators: true
+            }
+        ).populate('subscription.transaction');
 
         // Log activity
         await ActivityLog.create({
@@ -152,18 +250,58 @@ router.post('/subscribe', protect, authorize('seller'), async (req, res) => {
 // Create seller profile
 router.post('/profile', protect, async (req, res) => {
     try {
-        const seller = await req.user.model('Seller').create({
+        // Create seller with inactive subscription status and features
+        const seller = await Seller.create({
             user: req.user._id,
-            ...req.body
+            businessName: req.body.businessName,
+            description: req.body.description,
+            location: req.body.location,
+            contactDetails: req.body.contactDetails,
+            subscription: {
+                plan: null,
+                status: 'inactive',
+                startDate: null,
+                endDate: null,
+                features: {
+                    maxPhotos: 0,
+                    maxListings: 0,
+                    listingDuration: 0,
+                    verificationLevel: 'none',
+                    virtualStableTour: false,
+                    analytics: false,
+                    homepageSpotlight: 0,
+                    featuredListingBoosts: {
+                        count: 0,
+                        duration: 0
+                    },
+                    priorityPlacement: false,
+                    badges: [],
+                    searchPlacement: 'none',
+                    socialMediaSharing: false,
+                    seriousBuyerAccess: false
+                }
+            }
         });
 
         // Update user role to seller
-        req.user.role = 'seller';
-        await req.user.save();
+        const user = await User.findById(req.user._id);
+        user.role = 'seller';
+        await user.save();
+
+        // Generate new token with updated role
+        const token = jwt.sign(
+            { 
+                id: user._id,
+                role: user.role
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '30d' }
+        );
 
         res.status(201).json({
             success: true,
-            seller
+            seller,
+            token
         });
     } catch (error) {
         console.error(error);
@@ -203,5 +341,9 @@ router.post('/reviews', protect, addReview);
 router.put('/subscription', protect, authorize('seller'), updateSubscription);
 router.delete('/subscription', protect, authorize('seller'), cancelSubscription);
 router.get('/subscription', protect, authorize('seller'), getSubscriptionDetails);
+
+// Razorpay payment routes
+router.post('/subscribe/create-order', protect, authorize('seller'), createOrder);
+router.post('/subscribe/verify-payment', protect, authorize('seller'), verifyPayment);
 
 module.exports = router;
