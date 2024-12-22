@@ -31,7 +31,7 @@ const horseSchema = new mongoose.Schema({
     gender: {
         type: String,
         required: true,
-        enum: ['Stallion', 'Mare', 'Gelding']
+        enum: ['Stallion', 'Mare', 'Gelding', 'Other']
     },
     color: {
         type: String,

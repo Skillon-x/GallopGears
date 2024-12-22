@@ -349,4 +349,82 @@ exports.deleteHorseListing = async (req, res) => {
         });
     }
 };
+
+// @desc    Get all horse listings (Admin)
+// @route   GET /api/horses/admin/listings
+// @access  Private (Admin only)
+exports.getAllListingsAdmin = async (req, res) => {
+    try {
+        const { 
+            status, 
+            seller, 
+            sort = '-createdAt',
+            page = 1,
+            limit = 10
+        } = req.query;
+
+        const query = {};
+
+        // Apply filters
+        if (status) query.listingStatus = status;
+        if (seller) query.seller = seller;
+
+        // Calculate pagination
+        const skip = (page - 1) * limit;
+
+        // Get total count for pagination
+        const total = await Horse.countDocuments(query);
+
+        // Get listings with seller details
+        const listings = await Horse.find(query)
+            .populate({
+                path: 'seller',
+                select: 'businessName location subscription user',
+                populate: {
+                    path: 'user',
+                    select: 'name email'
+                }
+            })
+            .sort(sort)
+            .skip(skip)
+            .limit(parseInt(limit));
+
+        // Add additional statistics
+        const enhancedListings = listings.map(listing => ({
+            ...listing.toObject(),
+            sellerDetails: {
+                businessName: listing.seller.businessName,
+                location: listing.seller.location,
+                subscriptionPlan: listing.seller.subscription?.plan || 'No Plan',
+                email: listing.seller.user.email,
+                name: listing.seller.user.name
+            },
+            statistics: {
+                views: listing.statistics?.views || 0,
+                inquiries: listing.statistics?.inquiries || 0,
+                favorites: listing.statistics?.favorites || 0,
+                daysListed: Math.ceil((new Date() - new Date(listing.createdAt)) / (1000 * 60 * 60 * 24))
+            }
+        }));
+
+        res.json({
+            success: true,
+            data: {
+                listings: enhancedListings,
+                pagination: {
+                    total,
+                    page: parseInt(page),
+                    pages: Math.ceil(total / limit),
+                    limit: parseInt(limit)
+                }
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error'
+        });
+    }
+};
  

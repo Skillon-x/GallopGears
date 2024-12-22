@@ -1,102 +1,93 @@
 const express = require('express');
 const router = express.Router();
 const { protect, authorize } = require('../middlewares/auth.middleware');
-const User = require('../models/User');
-const Transaction = require('../models/Transaction');
-const Horse = require('../models/Horse');
-const Seller = require('../models/Seller');
+const {
+    getAllUsers,
+    getUserById,
+    updateUser,
+    deleteUser,
+    deleteSeller,
+    getStats,
+    getAnalytics,
+    getDashboardActivities,
+    getRecentDashboardActivities,
+    getSellerDetails,
+    getSellerListings,
+    getSellerTransactions,
+    getSellerActivityLogs,
+    getSellerCommunicationHistory,
+    toggleUserBlock,
+    getBuyerDetails,
+    getBuyerInquiryHistory,
+    getBuyerReportHistory,
+    getBuyerActivityLogs,
+    getPendingApprovals,
+    getReportedListings,
+    getFeaturedListings,
+    getExpiredListings,
+    getDraftListings,
+    updateListingVerification,
+    updateSellerProfile,
+    deleteListing,
+    getAdminTransactions,
+    getTransactionById,
+    updateTransactionStatus,
+    exportTransactions,
+    getReports,
+    getReport,
+    updateReport,
+    deleteReport
+} = require('../controllers/admin.controller');
 
-// @desc    Get all users
-// @route   GET /api/admin/users
-// @access  Private (Admin)
-router.get('/users', protect, authorize('admin'), async (req, res) => {
-    try {
-        const users = await User.find().select('-password');
-        res.json({
-            success: true,
-            users
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error'
-        });
-    }
-});
+// User management routes
+router.get('/users', protect, authorize('admin'), getAllUsers);
+router.get('/users/:id', protect, authorize('admin'), getUserById);
+router.put('/users/:id', protect, authorize('admin'), updateUser);
+router.delete('/users/:id', protect, authorize('admin'), deleteUser);
+router.delete('/sellers/:id', protect, authorize('admin'), deleteSeller);
 
-// @desc    Get all transactions
-// @route   GET /api/admin/transactions
-// @access  Private (Admin)
-router.get('/transactions', protect, authorize('admin'), async (req, res) => {
-    try {
-        const transactions = await Transaction.find()
-            .populate('seller', 'businessName')
-            .sort('-createdAt');
+// Analytics and stats routes
+router.get('/dashboard/stats', protect, authorize('admin'), getStats);
+router.get('/dashboard/activities', protect, authorize('admin'), getDashboardActivities);
+router.get('/dashboard/activities/recent', protect, authorize('admin'), getRecentDashboardActivities);
+router.get('/analytics', protect, authorize('admin'), getAnalytics);
 
-        res.json({
-            success: true,
-            transactions
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error'
-        });
-    }
-});
+// Seller management routes
+router.get('/sellers/:id', protect, authorize('admin'), getSellerDetails);
+router.put('/sellers/:id', protect, authorize('admin'), updateSellerProfile);
+router.get('/sellers/:id/listings', protect, authorize('admin'), getSellerListings);
+router.get('/sellers/:id/transactions', protect, authorize('admin'), getSellerTransactions);
+router.get('/sellers/:id/activity', protect, authorize('admin'), getSellerActivityLogs);
+router.get('/sellers/:id/communications', protect, authorize('admin'), getSellerCommunicationHistory);
 
-// @desc    Get platform stats
-// @route   GET /api/admin/stats
-// @access  Private (Admin)
-router.get('/stats', protect, authorize('admin'), async (req, res) => {
-    try {
-        // Get counts
-        const userCount = await User.countDocuments();
-        const sellerCount = await Seller.countDocuments();
-        const horseCount = await Horse.countDocuments();
-        const transactionCount = await Transaction.countDocuments();
+// User actions
+router.post('/users/:id/block', protect, authorize('admin'), toggleUserBlock);
 
-        // Get total transaction amount
-        const transactions = await Transaction.find({ status: 'completed' });
-        const totalRevenue = transactions.reduce((acc, curr) => acc + curr.amount, 0);
+// Buyer management routes
+router.get('/buyers/:id', protect, authorize('admin'), getBuyerDetails);
+router.get('/buyers/:id/inquiries', protect, authorize('admin'), getBuyerInquiryHistory);
+router.get('/buyers/:id/reports', protect, authorize('admin'), getBuyerReportHistory);
+router.get('/buyers/:id/activity', protect, authorize('admin'), getBuyerActivityLogs);
 
-        // Get active listings
-        const activeListings = await Horse.countDocuments({ listingStatus: 'active' });
+// Listing management routes
+router.get('/listings/pending', protect, authorize('admin'), getPendingApprovals);
+router.get('/listings/reported', protect, authorize('admin'), getReportedListings);
+router.get('/listings/featured', protect, authorize('admin'), getFeaturedListings);
+router.get('/listings/expired', protect, authorize('admin'), getExpiredListings);
+router.get('/listings/draft', protect, authorize('admin'), getDraftListings);
+router.put('/listings/:id/verify', protect, authorize('admin'), updateListingVerification);
+router.delete('/listings/:id', protect, authorize('admin'), deleteListing);
 
-        // Get recent transactions
-        const recentTransactions = await Transaction.find()
-            .populate('seller', 'businessName')
-            .sort('-createdAt')
-            .limit(5);
+// Transaction routes
+router.get('/transactions', protect, authorize('admin'), getAdminTransactions);
+router.get('/transactions/:id', protect, authorize('admin'), getTransactionById);
+router.put('/transactions/:id/status', protect, authorize('admin'), updateTransactionStatus);
+router.get('/transactions/export', protect, authorize('admin'), exportTransactions);
 
-        res.json({
-            success: true,
-            stats: {
-                users: {
-                    total: userCount,
-                    sellers: sellerCount,
-                    buyers: userCount - sellerCount
-                },
-                horses: {
-                    total: horseCount,
-                    active: activeListings
-                },
-                transactions: {
-                    total: transactionCount,
-                    totalRevenue,
-                    recent: recentTransactions
-                }
-            }
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error'
-        });
-    }
-});
+// Report routes
+router.get('/reports', protect, authorize('admin'), getReports);
+router.get('/reports/:id', protect, authorize('admin'), getReport);
+router.put('/reports/:id', protect, authorize('admin'), updateReport);
+router.delete('/reports/:id', protect, authorize('admin'), deleteReport);
 
 module.exports = router; 

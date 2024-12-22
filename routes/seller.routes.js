@@ -5,6 +5,7 @@ const Seller = require('../models/Seller');
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
 const ActivityLog = require('../models/ActivityLog');
+const Horse = require('../models/Horse');
 const { validateSubscription } = require('../src/utils/validation');
 const { createOrder, verifyPayment } = require('../controllers/payment.controller');
 const jwt = require('jsonwebtoken');
@@ -23,38 +24,14 @@ const {
     addReview,
     updateSubscription,
     cancelSubscription,
-    getSubscriptionDetails
+    getSubscriptionDetails,
+    deleteSeller
 } = require('../controllers/seller.controller');
 
 // Get subscription plans
 router.get('/plans', async (req, res) => {
     try {
         const plans = [
-            {
-                id: 'free',
-                name: 'Free',
-                price: 0,
-                features: {
-                    ...SUBSCRIPTION_FEATURES['Free'],
-                    maxListings: '1 listing',
-                    maxPhotos: '3 photos per listing',
-                    listingDuration: '15 days listing duration',
-                    verificationLevel: 'Basic verification',
-                    virtualStableTour: 'Not included',
-                    analytics: 'Not included',
-                    homepageSpotlight: 'Not included',
-                    featuredListingBoosts: {
-                        count: 'Not included',
-                        duration: 'Not included'
-                    },
-                    priorityPlacement: 'Standard placement',
-                    badges: ['Basic Seller'],
-                    searchPlacement: 'Basic search placement',
-                    socialMediaSharing: 'Not included',
-                    seriousBuyerAccess: 'Not included'
-                },
-                duration: 'Unlimited'
-            },
             {
                 id: 'royal_stallion',
                 name: 'Royal Stallion',
@@ -345,5 +322,44 @@ router.get('/subscription', protect, authorize('seller'), getSubscriptionDetails
 // Razorpay payment routes
 router.post('/subscribe/create-order', protect, authorize('seller'), createOrder);
 router.post('/subscribe/verify-payment', protect, authorize('seller'), verifyPayment);
+
+// Admin Routes
+router.delete('/admin/:id', protect, authorize('admin'), async (req, res) => {
+    try {
+        const seller = await Seller.findById(req.params.id);
+        if (!seller) {
+            return res.status(404).json({
+                success: false,
+                message: 'Seller not found'
+            });
+        }
+
+        // Delete all horse listings by this seller
+        await Horse.deleteMany({ seller: seller._id });
+
+        // Delete seller's transactions
+        await Transaction.deleteMany({ seller: seller._id });
+
+        // Delete seller's activity logs
+        await ActivityLog.deleteMany({ user: seller.user });
+
+        // Delete seller profile
+        await seller.remove();
+
+        // Update user role back to 'user'
+        await User.findByIdAndUpdate(seller.user, { role: 'user' });
+
+        res.json({
+            success: true,
+            message: 'Seller and all associated data deleted successfully'
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error'
+        });
+    }
+});
 
 module.exports = router;

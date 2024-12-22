@@ -83,12 +83,20 @@ const testSuites = [
 
                     // Get seller ID
                     const meResult = await makeRequest('GET', '/sellers/me', null, testData.sellerToken);
+                    if (!meResult.success || !meResult.seller._id) {
+                        throw new Error('Failed to get seller ID');
+                    }
                     testData.sellerId = meResult.seller._id;
+                    debug('Seller ID:', testData.sellerId);
                 }
             },
             {
                 name: 'Create Test Data',
                 run: async () => {
+                    if (!testData.sellerId) {
+                        throw new Error('Seller ID not set');
+                    }
+                    debug('Creating test data for seller:', testData.sellerId);
                     // Create multiple horse listings
                     for (let i = 0; i < 3; i++) {
                         const horseResult = await makeRequest('POST', '/horses', {
@@ -153,10 +161,10 @@ const testSuites = [
                     // Create test conversations
                     for (const horseId of testData.horseIds) {
                         const conversationResult = await makeRequest('POST', '/messaging/conversations', {
-                            recipientId: testData.sellerId,
+                            recipientId: buyerResult.user._id,
                             entityType: 'horse',
                             entityId: horseId
-                        }, buyerResult.token);
+                        }, testData.sellerToken);
 
                         if (!conversationResult.success) {
                             throw new Error('Failed to create conversation');

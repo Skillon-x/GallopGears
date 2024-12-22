@@ -13,7 +13,8 @@ const {
     getPriceRanges,
     searchHorses,
     addToFavorites,
-    removeFromFavorites
+    removeFromFavorites,
+    getAllListingsAdmin
 } = require('../controllers/horse.controller');
 
 // Validation middleware
@@ -60,6 +61,9 @@ const updateHorseValidation = [
     body('specifications.healthStatus').optional().notEmpty().withMessage('Health status is required'),
     body('listingStatus').optional().isIn(['draft', 'active', 'sold', 'inactive']).withMessage('Invalid listing status')
 ];
+
+// Admin Routes
+router.get('/admin/listings', protect, authorize('admin'), getAllListingsAdmin);
 
 // Public routes for buyers
 router.get('/featured', getFeaturedHorses);
