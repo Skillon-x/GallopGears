@@ -10,6 +10,7 @@ const Inquiry = require('../models/Inquiry');
 const cloudinary = require('cloudinary').v2;
 const mongoose = require('mongoose');
 const Report = require('../models/Report');
+const { asyncHandler } = require('../middlewares/error.middleware');
 
 // Cloudinary helper functions
 const uploadToCloudinary = async (file, folder) => {
@@ -1290,7 +1291,7 @@ exports.exportTransactions = async (req, res) => {
 // @desc    Get all reports
 // @route   GET /api/admin/reports
 // @access  Private/Admin
-const getReports = asyncHandler(async (req, res) => {
+exports.getReports = asyncHandler(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const status = req.query.status;
@@ -1328,7 +1329,7 @@ const getReports = asyncHandler(async (req, res) => {
 // @desc    Get single report
 // @route   GET /api/admin/reports/:id
 // @access  Private/Admin
-const getReport = asyncHandler(async (req, res) => {
+exports.getReport = asyncHandler(async (req, res) => {
     const report = await Report.findById(req.params.id)
         .populate('reportedBy', 'name email')
         .populate('reportedItem', 'title');
@@ -1347,7 +1348,7 @@ const getReport = asyncHandler(async (req, res) => {
 // @desc    Update report status
 // @route   PUT /api/admin/reports/:id
 // @access  Private/Admin
-const updateReport = asyncHandler(async (req, res) => {
+exports.updateReport = asyncHandler(async (req, res) => {
     const { status, notes } = req.body;
 
     const report = await Report.findById(req.params.id);
@@ -1385,7 +1386,7 @@ const updateReport = asyncHandler(async (req, res) => {
 // @desc    Delete report
 // @route   DELETE /api/admin/reports/:id
 // @access  Private/Admin
-const deleteReport = asyncHandler(async (req, res) => {
+exports.deleteReport = asyncHandler(async (req, res) => {
     const report = await Report.findById(req.params.id);
 
     if (!report) {
@@ -1412,11 +1413,3 @@ const deleteReport = asyncHandler(async (req, res) => {
         data: {}
     });
 });
-
-module.exports = {
-    // ... existing code ...
-    getReports,
-    getReport,
-    updateReport,
-    deleteReport
-};
