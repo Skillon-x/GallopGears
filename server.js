@@ -41,7 +41,7 @@ if (process.env.NODE_ENV !== 'test') {
 
 // Middleware
 app.use(cors({
-    origin: 'https://zippy-belekoy-1fc802.netlify.app', // Your frontend URL
+    origin: ['http://localhost:5173', 'http://localhost:3000','https://zippy-belekoy-1fc802.netlify.app/','https://zippy-belekoy-1fc802.netlify.app'], // Your frontend URL
     credentials: true,  // Allow credentials
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
