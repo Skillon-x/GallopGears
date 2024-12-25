@@ -1,14 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Heart, ChevronDown, Loader } from 'lucide-react';
+import { useDebounce } from '../../hooks/useDebounce';
+import VirtualGrid from '../../components/common/VirtualGrid';
 
-// Price range options
+// Price range options with proper type checking
 const PRICE_RANGES = [
-    { id: 'all', label: 'All Prices', value: 'all' },
-    { id: 'under100k', label: 'Under ₹1,00,000', min: 0, max: 100000 },
-    { id: '100k-300k', label: '₹1,00,000 - ₹3,00,000', min: 100000, max: 300000 },
-    { id: 'above300k', label: 'Above ₹3,00,000', min: 300000, max: Infinity }
+    { id: 'all', label: 'All Prices', value: 'all', min: 0, max: Infinity },
+    { id: 'under100k', label: 'Under ₹1,00,000', value: 'under100k', min: 0, max: 100000 },
+    { id: '100k-300k', label: '₹1,00,000 - ₹3,00,000', value: '100k-300k', min: 100000, max: 300000 },
+    { id: 'above300k', label: 'Above ₹3,00,000', value: 'above300k', min: 300000, max: Infinity }
 ];
+
+const HorseCard = React.memo(({ horse, isFavorite, onToggleFavorite }) => (
+    <Link 
+        to={`/horses/${horse._id}`}
+        className="group bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow"
+    >
+        <div className="relative aspect-[4/3] overflow-hidden">
+            <img
+                src={horse.images?.[0]?.url || '/images/placeholder-horse.jpg'}
+                alt={horse.name}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                loading="lazy"
+            />
+            <button
+                onClick={(e) => {
+                    e.preventDefault();
+                    onToggleFavorite(horse._id);
+                }}
+                className="absolute top-2 right-2 p-2 bg-white/90 rounded-full hover:bg-white transition-colors"
+            >
+                <Heart 
+                    className={`w-5 h-5 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} 
+                />
+            </button>
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
+                <p className="text-white font-semibold">{horse.name}</p>
+                <p className="text-white/90 text-sm">
+                    {horse.breed} • {horse.age?.years || 0} years
+                </p>
+            </div>
+        </div>
+        <div className="p-4">
+            <div className="flex justify-between items-center">
+                <p className="text-primary font-bold">
+                    ₹{horse.price?.toLocaleString() || '0'}
+                </p>
+                <p className="text-sm text-tertiary/70">
+                    {horse.location?.city || 'Location N/A'}
+                </p>
+            </div>
+        </div>
+    </Link>
+));
 
 const FeaturedHorsesHome = ({ horses = [], breeds = [] }) => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -16,33 +61,60 @@ const FeaturedHorsesHome = ({ horses = [], breeds = [] }) => {
     const [selectedPrice, setSelectedPrice] = useState('all');
     const [favorites, setFavorites] = useState([]);
 
-    const toggleFavorite = async (horseId) => {
+    const debouncedSearch = useDebounce(searchTerm, 300);
+
+    const toggleFavorite = useCallback(async (horseId) => {
         try {
-            if (favorites.includes(horseId)) {
-                setFavorites(prev => prev.filter(id => id !== horseId));
-            } else {
-                setFavorites(prev => [...prev, horseId]);
-            }
+            setFavorites(prev => 
+                prev.includes(horseId) 
+                    ? prev.filter(id => id !== horseId)
+                    : [...prev, horseId]
+            );
         } catch (error) {
             console.error('Error toggling favorite:', error);
         }
-    };
+    }, []);
 
-    const filteredHorses = horses.filter(horse => {
-        const matchesSearch = horse.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            horse.breed.toLowerCase().includes(searchTerm.toLowerCase());
-        
-        const matchesBreed = !selectedBreed || selectedBreed === 'All Breeds' ||
-            horse.breed === selectedBreed;
-        
-        const selectedPriceRange = PRICE_RANGES.find(range => range.value === selectedPrice);
-        const matchesPrice = selectedPrice === 'all' || (
-            horse.price >= selectedPriceRange.min && 
-            horse.price <= selectedPriceRange.max
-        );
+    const filteredHorses = useMemo(() => {
+        return horses.filter(horse => {
+            // Safely handle undefined values in search
+            const horseName = (horse.name || '').toLowerCase();
+            const horseBreed = (horse.breed || '').toLowerCase();
+            const searchQuery = debouncedSearch.toLowerCase();
+            
+            const matchesSearch = horseName.includes(searchQuery) ||
+                horseBreed.includes(searchQuery);
+            
+            const matchesBreed = !selectedBreed || selectedBreed === 'All Breeds' ||
+                horse.breed === selectedBreed;
+            
+            // Get the selected price range and safely handle price comparison
+            const selectedPriceRange = PRICE_RANGES.find(range => range.value === selectedPrice) || PRICE_RANGES[0];
+            const horsePrice = horse.price || 0;
+            const matchesPrice = selectedPrice === 'all' || (
+                horsePrice >= selectedPriceRange.min && 
+                horsePrice <= selectedPriceRange.max
+            );
 
-        return matchesSearch && matchesBreed && matchesPrice;
-    });
+            return matchesSearch && matchesBreed && matchesPrice;
+        });
+    }, [horses, debouncedSearch, selectedBreed, selectedPrice]);
+
+    const renderHorseCard = useCallback(({ index, style }) => (
+        <div key={filteredHorses[index]._id} style={style}>
+            <HorseCard 
+                horse={filteredHorses[index]}
+                isFavorite={favorites.includes(filteredHorses[index]._id)}
+                onToggleFavorite={toggleFavorite}
+            />
+        </div>
+    ), [filteredHorses, favorites, toggleFavorite]);
+
+    // Prepare breeds for select dropdown
+    const availableBreeds = useMemo(() => {
+        const uniqueBreeds = new Set(horses.map(horse => horse.breed).filter(Boolean));
+        return Array.from(uniqueBreeds);
+    }, [horses]);
 
     return (
         <section className="py-16 bg-white">
@@ -81,8 +153,8 @@ const FeaturedHorsesHome = ({ horses = [], breeds = [] }) => {
                         className="px-4 py-2 border border-secondary rounded-md focus:outline-none focus:border-primary min-w-[200px]"
                     >
                         <option value="All Breeds">All Breeds</option>
-                        {breeds.map(breed => (
-                            <option key={breed._id} value={breed.name}>{breed.name}</option>
+                        {availableBreeds.map(breed => (
+                            <option key={breed} value={breed}>{breed}</option>
                         ))}
                     </select>
 
@@ -100,79 +172,17 @@ const FeaturedHorsesHome = ({ horses = [], breeds = [] }) => {
                     </select>
                 </div>
 
-                {/* Horse Cards Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {filteredHorses.map(horse => (
-                        <div key={horse._id} className="bg-white rounded-lg shadow-md overflow-hidden group hover:shadow-xl transition-shadow">
-                            {/* Image Container */}
-                            <div className="relative aspect-[4/3] overflow-hidden">
-                                <img
-                                    src={horse.images[0]?.url || '/images/placeholder-horse.jpg'}
-                                    alt={horse.name}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                />
-                                {horse.featured?.active && (
-                                    <span className="absolute top-2 right-2 bg-accent text-white px-2 py-1 rounded-full text-xs">
-                                        Featured
-                                    </span>
-                                )}
-                                <button
-                                    onClick={() => toggleFavorite(horse._id)}
-                                    className="absolute top-2 left-2 p-1.5 rounded-full bg-white shadow-md hover:bg-secondary transition-colors"
-                                >
-                                    <Heart
-                                        className={`h-5 w-5 ${favorites.includes(horse._id)
-                                                ? 'fill-accent text-accent'
-                                                : 'text-tertiary'
-                                            }`}
-                                    />
-                                </button>
-                            </div>
-
-                            {/* Content */}
-                            <div className="p-4">
-                                <div className="flex justify-between items-start mb-2">
-                                    <h3 className="font-bold text-tertiary">{horse.name}</h3>
-                                    <p className="text-lg font-bold text-primary">
-                                        ₹{horse.price.toLocaleString()}
-                                    </p>
-                                </div>
-                                <p className="text-sm text-tertiary/80 mb-3">
-                                    {horse.breed} • {horse.age.years} years • {horse.location.city}
-                                </p>
-                                <p className="text-sm text-tertiary/70 mb-4">
-                                    Listed by {horse.seller?.businessName}
-                                </p>
-
-                                {/* Action Buttons */}
-                                <div className="flex gap-2">
-                                    <Link 
-                                        to={`/horses/${horse._id}`}
-                                        className="flex-1 bg-accent hover:bg-primary text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 text-center"
-                                    >
-                                        View Details
-                                    </Link>
-                                    <Link 
-                                        to={`/inquire/${horse._id}`}
-                                        className="flex-1 border border-tertiary text-tertiary hover:bg-secondary px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 text-center"
-                                    >
-                                        Inquire
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* No Results */}
-                {filteredHorses.length === 0 && (
-                    <div className="text-center py-8">
-                        <p className="text-tertiary">No horses found matching your criteria.</p>
-                    </div>
-                )}
+                {/* Virtual Grid of Horses */}
+                <VirtualGrid
+                    itemCount={filteredHorses.length}
+                    itemHeight={400}
+                    columnCount={3}
+                    gap={24}
+                    renderItem={renderHorseCard}
+                />
             </div>
         </section>
     );
 };
 
-export default FeaturedHorsesHome;
+export default React.memo(FeaturedHorsesHome);

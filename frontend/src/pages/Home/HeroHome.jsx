@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, Search, PlusCircle } from 'lucide-react';
+import { ChevronRight, Search, PlusCircle, ShieldCheck, CreditCard, HeadphonesIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 
@@ -81,20 +81,20 @@ const HeroHome = ({ stats }) => {
           {/* Trust Badges */}
           <div className="mt-12 flex flex-wrap justify-center gap-8">
             <div className="text-secondary flex items-center">
-              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mr-2">
-                <span className="w-2 h-2 bg-accent rounded-full"></span>
+              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mr-3">
+                <ShieldCheck className="w-6 h-6 text-white" />
               </div>
               Verified Sellers
             </div>
             <div className="text-secondary flex items-center">
-              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mr-2">
-                <span className="w-2 h-2 bg-accent rounded-full"></span>
+              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mr-3">
+                <CreditCard className="w-6 h-6 text-white" />
               </div>
               Secure Payments
             </div>
             <div className="text-secondary flex items-center">
-              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mr-2">
-                <span className="w-2 h-2 bg-accent rounded-full"></span>
+              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mr-3">
+                <HeadphonesIcon className="w-6 h-6 text-white" />
               </div>
               Expert Support
             </div>
