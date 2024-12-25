@@ -43,7 +43,7 @@ const FeaturedSellers = ({ sellers = [] }) => {
                             </div>
 
                             {/* Profile Image */}
-                            <div className="relative px-4"
+                            <div className="relative px-4">
                                 <div className="absolute -top-8 w-16 h-16 rounded-full border-4 border-white overflow-hidden">
                                     <img
                                         src={seller.images?.profile || '/placeholder-profile.jpg'}

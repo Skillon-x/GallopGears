@@ -1,8 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Search, PlusCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+
 
 const HeroHome = ({ stats }) => {
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   return (
     <div className="relative min-h-screen pt-16">
       {/* Background with Overlay */}
@@ -17,12 +23,20 @@ const HeroHome = ({ stats }) => {
       <div className="relative container mx-auto px-4 py-32 lg:pt-38 lg:pb-44">
         <div className="max-w-3xl mx-auto text-center">
           {/* Main Text */}
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
+          
+          <motion.h1 initial={{ opacity: 0, y: -100 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1, delay: 0.5 }}
+        viewport={{ once: true }} className="text-4xl md:text-6xl font-bold text-white mb-6">
             Your Premier Horse Trading Marketplace
-          </h1>
-          <p className="text-lg md:text-xl text-secondary mb-12">
+          </motion.h1>
+
+          <motion.p initial={{ opacity: 0, y: 100 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1, delay: 0.5 }}
+        viewport={{ once: true }} className="text-lg md:text-xl text-secondary mb-12">
             Connect with trusted sellers, find your perfect horse, or list your equine companion with confidence.
-          </p>
+          </motion.p>
 
           {/* Main Action Buttons */}
           <div className="flex flex-col sm:flex-row justify-center gap-4 mb-12">

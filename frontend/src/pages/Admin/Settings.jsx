@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, Save } from 'lucide-react';
 import api from '../../services/api';
-import AdminLayout from '../../components/admin/AdminLayout';
+import AdminLayout from '../../admin/AdminLayout';
 
 const AdminSettings = () => {
     const [loading, setLoading] = useState(false);

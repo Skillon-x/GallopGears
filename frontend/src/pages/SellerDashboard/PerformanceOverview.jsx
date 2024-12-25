@@ -31,6 +31,7 @@ const PerformanceOverview = () => {
     const [selectedMetric, setSelectedMetric] = useState('views');
 
     useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         const fetchPerformance = async () => {
             try {
                 const [performanceRes, listingAnalytics, inquiryAnalytics] = await Promise.all([

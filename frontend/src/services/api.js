@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Base URL configuration
-const API_BASE_URL = 'https://gallopgears.onrender.com/api';
+const API_BASE_URL = 'http://localhost:5000/api';
 
 // Create axios instance with default config
 const apiClient = axios.create({
@@ -63,20 +63,32 @@ apiClient.interceptors.response.use(
         // Handle connection errors
         if (!error.response) {
             console.error('Network Error:', error.message);
+            // Clear any pending operations
+            processQueue(new Error('Network connection lost'));
             throw new Error('Unable to connect to server. Please check your internet connection and ensure the backend server is running.');
         }
 
         // Handle 401 Unauthorized errors
         if (error.response?.status === 401 && !originalRequest._retry) {
             if (isRefreshing) {
-                // If already refreshing, queue this request
+                // If already refreshing, queue this request with a timeout
                 try {
-                    const token = await new Promise((resolve, reject) => {
+                    const timeoutPromise = new Promise((_, reject) => {
+                        setTimeout(() => reject(new Error('Token refresh timeout')), 10000); // 10 second timeout
+                    });
+                    
+                    const tokenPromise = new Promise((resolve, reject) => {
                         failedQueue.push({ resolve, reject });
                     });
+
+                    const token = await Promise.race([tokenPromise, timeoutPromise]);
                     originalRequest.headers.Authorization = `Bearer ${token}`;
                     return apiClient(originalRequest);
                 } catch (err) {
+                    // Clear queue on timeout
+                    if (err.message === 'Token refresh timeout') {
+                        processQueue(err);
+                    }
                     return Promise.reject(err);
                 }
             }
@@ -85,44 +97,42 @@ apiClient.interceptors.response.use(
             isRefreshing = true;
 
             try {
-                // Check if we have a recent valid token check
-                const currentTime = Date.now();
-                if (isTokenValid && currentTime - lastTokenCheck < TOKEN_CHECK_INTERVAL) {
-                    // Token was recently validated, just retry the request
-                    const token = localStorage.getItem('token');
-                    if (!token) {
-                        throw new Error('No token available');
+                // Add timeout for token validation
+                const validationPromise = async () => {
+                    const currentTime = Date.now();
+                    if (isTokenValid && currentTime - lastTokenCheck < TOKEN_CHECK_INTERVAL) {
+                        const token = localStorage.getItem('token');
+                        if (!token) throw new Error('No token available');
+                        return token;
                     }
-                    processQueue(null, token);
-                    return apiClient(originalRequest);
-                }
 
-                // Token needs validation
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    throw new Error('No token available');
-                }
+                    const token = localStorage.getItem('token');
+                    if (!token) throw new Error('No token available');
 
-                // Try to validate token using the appropriate endpoint based on the original request
-                const validationEndpoint = originalRequest.url.includes('/sellers/') ?
-                    endpoints.sellers.profile : endpoints.users.profile;
+                    const validationEndpoint = originalRequest.url.includes('/sellers/') ?
+                        endpoints.sellers.profile : endpoints.users.profile;
 
-                const response = await apiClient.get(validationEndpoint, {
-                    headers: { Authorization: `Bearer ${token}` },
-                    _retry: true // Mark this request to prevent infinite loop
+                    const response = await apiClient.get(validationEndpoint, {
+                        headers: { Authorization: `Bearer ${token}` },
+                        _retry: true
+                    });
+
+                    if (response.data) {
+                        isTokenValid = true;
+                        lastTokenCheck = currentTime;
+                        return token;
+                    }
+                    throw new Error('Token validation failed');
+                };
+
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('Token validation timeout')), 10000);
                 });
 
-                if (response.data) {
-                    // Token is valid
-                    isTokenValid = true;
-                    lastTokenCheck = currentTime;
-                    processQueue(null, token);
-                    return apiClient(originalRequest);
-                } else {
-                    throw new Error('Token validation failed');
-                }
+                const token = await Promise.race([validationPromise(), timeoutPromise]);
+                processQueue(null, token);
+                return apiClient(originalRequest);
             } catch (refreshError) {
-                // If refresh fails, clear token and queue
                 localStorage.removeItem('token');
                 isTokenValid = false;
                 processQueue(refreshError, null);
@@ -135,7 +145,6 @@ apiClient.interceptors.response.use(
 
         // Handle 403 Forbidden errors (role-based access)
         if (error.response?.status === 403) {
-            // If it's a seller subscription error, handle specially
             if (error.response.data?.message?.includes('subscription')) {
                 window.dispatchEvent(new CustomEvent('subscription-error', {
                     detail: error.response.data
@@ -365,6 +374,30 @@ export const api = {
     },
     // Horse services
     horses: {
+        getDetails: async (id) => {
+            try {
+                console.log('Fetching horse details for ID:', id);
+                const response = await apiClient.get(endpoints.horses.details(id));
+                
+                // Ensure consistent response format
+                const processedResponse = handleResponse(response);
+                
+                // If the response is in the old format, convert it to the new format
+                if (processedResponse.success && !processedResponse.data && processedResponse.horse) {
+                    return {
+                        data: {
+                            success: true,
+                            horse: processedResponse.horse
+                        }
+                    };
+                }
+                
+                return processedResponse;
+            } catch (error) {
+                console.error('Error fetching horse details:', error);
+                throw handleError(error);
+            }
+        },
         getFeatured: async () => {
             try {
                 const response = await apiClient.get(endpoints.horses.featured);
@@ -392,14 +425,6 @@ export const api = {
         getPriceRanges: async () => {
             try {
                 const response = await apiClient.get(endpoints.horses.priceRanges);
-                return handleResponse(response);
-            } catch (error) {
-                handleError(error);
-            }
-        },
-        getDetails: async (id) => {
-            try {
-                const response = await apiClient.get(endpoints.horses.details(id));
                 return handleResponse(response);
             } catch (error) {
                 handleError(error);
@@ -819,36 +844,88 @@ export const api = {
     inquiries: {
         create: async (data) => {
             try {
+                console.log('Making inquiry creation request with:', data);
                 const response = await apiClient.post(endpoints.inquiries.create, data);
-                return handleResponse(response);
+                console.log('Raw inquiry creation response:', response);
+
+                // Handle the response
+                if (response.data?.success) {
+                    return {
+                        data: {
+                            success: true,
+                            inquiry: response.data.inquiry
+                        }
+                    };
+                } else if (response.data?.error) {
+                    throw new Error(response.data.error);
+                } else {
+                    throw new Error('Invalid response format from server');
+                }
             } catch (error) {
-                handleError(error);
+                console.error('Inquiry creation error details:', {
+                    message: error.message,
+                    response: error.response?.data,
+                    status: error.response?.status
+                });
+                
+                // Handle specific error cases
+                if (error.response?.status === 400) {
+                    throw new Error(error.response.data.message || 'Invalid inquiry data');
+                } else if (error.response?.status === 401) {
+                    throw new Error('Please login to send inquiries');
+                } else if (error.response?.status === 403) {
+                    throw new Error('You are not authorized to send inquiries');
+                } else if (error.response?.status === 404) {
+                    throw new Error('Horse not found or no longer available');
+                }
+                
+                throw error;
             }
         },
-        getList: async () => {
+        getMine: async () => {
             try {
                 const response = await apiClient.get(endpoints.inquiries.list);
-                return handleResponse(response);
+                const result = handleResponse(response);
+                
+                // Ensure consistent response format
+                if (result.data?.success) {
+                    return result;
+                } else if (result.success) {
+                    return {
+                        data: {
+                            success: true,
+                            inquiries: result.inquiries
+                        }
+                    };
+                }
+                throw new Error('Invalid response format');
             } catch (error) {
-                handleError(error);
+                console.error('Failed to fetch inquiries:', error);
+                throw error;
             }
         },
         getDetails: async (id) => {
             try {
                 const response = await apiClient.get(endpoints.inquiries.details(id));
-                return handleResponse(response);
+                const result = handleResponse(response);
+                
+                // Ensure consistent response format
+                if (result.data?.success) {
+                    return result;
+                } else if (result.success) {
+                    return {
+                        data: {
+                            success: true,
+                            inquiry: result.inquiry
+                        }
+                    };
+                }
+                throw new Error('Invalid response format');
             } catch (error) {
-                handleError(error);
+                console.error('Failed to fetch inquiry details:', error);
+                throw error;
             }
-        },
-        reply: async (id, data) => {
-            try {
-                const response = await apiClient.post(`${endpoints.inquiries.details(id)}/reply`, data);
-                return handleResponse(response);
-            } catch (error) {
-                handleError(error);
-            }
-        },
+        }
     },
     // Support services
     support: {

@@ -163,7 +163,7 @@ const SellerSubscriptionPlans = () => {
       } = location.state || {};
 
     useEffect(() => {
-        console.log('User data:', userData);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         const fetchPlans = async () => {
             try {
                 console.log('Fetching subscription plans...');

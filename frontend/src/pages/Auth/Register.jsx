@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { 
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 
 const Register = () => {
+  
   const navigate = useNavigate();
   const { register } = useAuth();
   const [formData, setFormData] = useState({
@@ -24,7 +25,9 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({

@@ -7,20 +7,30 @@ import DashboardSidebar from './DashboardSidebar';
 const InquiryCard = ({ inquiry }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
+  if (!inquiry) {
+    return null;
+  }
+
+  const horseName = inquiry?.horse?.name || 'Horse details unavailable';
+  const buyerName = inquiry?.buyer?.name || 'Buyer details unavailable';
+  const status = inquiry?.status || 'pending';
+  const message = inquiry?.message || 'No message provided';
+  const reply = inquiry?.reply;
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       <div className="p-4">
         <div className="flex justify-between items-start">
           <div>
-            <h3 className="text-lg font-semibold text-tertiary">{inquiry.horse.name}</h3>
-            <p className="text-tertiary/70 text-sm mt-1">From: {inquiry.buyer.name}</p>
+            <h3 className="text-lg font-semibold text-tertiary">{horseName}</h3>
+            <p className="text-tertiary/70 text-sm mt-1">From: {buyerName}</p>
           </div>
           <span className={`text-sm px-2 py-1 rounded-full ${
-            inquiry.status === 'pending' ? 'bg-orange-100 text-orange-600' :
-            inquiry.status === 'replied' ? 'bg-green-100 text-green-600' :
+            status === 'pending' ? 'bg-orange-100 text-orange-600' :
+            status === 'replied' ? 'bg-green-100 text-green-600' :
             'bg-gray-100 text-gray-600'
           }`}>
-            {inquiry.status.charAt(0).toUpperCase() + inquiry.status.slice(1)}
+            {status.charAt(0).toUpperCase() + status.slice(1)}
           </span>
         </div>
         
@@ -40,18 +50,18 @@ const InquiryCard = ({ inquiry }) => {
           
           {isExpanded && (
             <div className="mt-2 p-3 bg-gray-50 rounded-lg">
-              <p className="text-tertiary">{inquiry.message}</p>
-              {inquiry.reply && (
+              <p className="text-tertiary">{message}</p>
+              {reply && (
                 <div className="mt-3 pt-3 border-t border-gray-200">
                   <p className="text-sm font-medium text-tertiary">Your Reply:</p>
-                  <p className="text-tertiary mt-1">{inquiry.reply}</p>
+                  <p className="text-tertiary mt-1">{reply}</p>
                 </div>
               )}
             </div>
           )}
         </div>
 
-        {!inquiry.reply && (
+        {!reply && (
           <div className="mt-4">
             <textarea
               placeholder="Write your reply..."

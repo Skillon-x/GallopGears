@@ -3,22 +3,23 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Layout from './layout/Layout';
 import Home from './pages/Home/Home';
-import Browse from './pages/Browse/Browse';
+import Browse from './pages/Browse/browse';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
-import RegisterSellerFlow from './pages/RegisterSellerFlow';
+import RegisterSellerFlow from './pages/Auth/RegisterSellerFlow';
 import Dashboard from './pages/SellerDashboard/Dashboard';
 import AddListing from './pages/SellerDashboard/AddListing';
 import Listings from './pages/SellerDashboard/Listings';
-import Inquiries from './pages/SellerDashboard/Inquiries';
+import SellerInquiries from './pages/SellerDashboard/Inquiries';
+import UserInquiries from './pages/UserDashboard/Inquiries';
 import Reviews from './pages/SellerDashboard/Reviews';
 import Payments from './pages/SellerDashboard/Payments';
 import Settings from './pages/SellerDashboard/Settings';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
 import SellerSubscriptionPlans from './pages/SellerSubscriptionPlans';
-import HorseDetails from './pages/Browse/HorseDetails';
-import EnquiryForm from './pages/Browse/EnquiryForm';
+import HorseDetails from './components/HorseDetails';
+import Enquire from './components/Enquire';
 import AdminLogin from './pages/Admin/Login';
 import AdminDashboard from './pages/Admin/Dashboard';
 import AdminUsers from './pages/Admin/Users';
@@ -34,6 +35,7 @@ const App = () => {
           {/* Public Routes */}
           <Route path="/" element={<Layout><Home /></Layout>} />
           <Route path="/browse" element={<Layout><Browse /></Layout>} />
+          <Route path="/horses/:id" element={<Layout><HorseDetails /></Layout>} />
           <Route path="/login" element={<Layout><Login /></Layout>} />
           <Route path="/register" element={<Layout><Register /></Layout>} />
           <Route path="/register/seller" element={<Layout><RegisterSellerFlow /></Layout>} />
@@ -41,9 +43,7 @@ const App = () => {
           <Route path="/horses/:id" element={<Layout><HorseDetails /></Layout>} />
 
           {/* Admin Routes */}
-          <Route path="/admin/login" element={<Layout><AdminLogin /></Layout>} />
-          
-          {/* Protected Admin Routes */}
+          <Route path="/admin/login" element={<AdminLogin />} />
           <Route element={<AdminProtectedRoute />}>
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/users" element={<AdminUsers />} />
@@ -54,7 +54,9 @@ const App = () => {
 
           {/* Protected Routes */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/enquire/:id" element={<Layout><EnquiryForm /></Layout>} />
+            {/* User Routes */}
+            <Route path="/inquiries" element={<Layout><UserInquiries /></Layout>} />
+            <Route path="/inquire/:id" element={<Layout><Enquire /></Layout>} />
             
             {/* Seller Dashboard Routes */}
             <Route path="/seller/dashboard" element={<Layout><Dashboard /></Layout>} />
@@ -65,7 +67,7 @@ const App = () => {
             <Route path="/seller/listings/edit/:id" element={<Layout><AddListing /></Layout>} />
             
             {/* Other Seller Features */}
-            <Route path="/seller/inquiries" element={<Layout><Inquiries /></Layout>} />
+            <Route path="/seller/inquiries" element={<Layout><SellerInquiries /></Layout>} />
             <Route path="/seller/reviews" element={<Layout><Reviews /></Layout>} />
             <Route path="/seller/payments" element={<Layout><Payments /></Layout>} />
             <Route path="/seller/settings" element={<Layout><Settings /></Layout>} />

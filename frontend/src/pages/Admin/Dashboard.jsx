@@ -15,7 +15,7 @@ import {
     X
 } from 'lucide-react';
 import api from '../../services/api';
-import AdminLayout from '../../components/admin/AdminLayout';
+import AdminLayout from '../../admin/AdminLayout';
 
 // Activity type icons mapping
 const ACTIVITY_ICONS = {

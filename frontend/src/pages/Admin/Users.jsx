@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, MoreVertical, Edit, Trash2, CheckCircle, XCircle, Loader, AlertCircle, Activity } from 'lucide-react';
 import api from '../../services/api';
-import AdminLayout from '../../components/admin/AdminLayout';
+import AdminLayout from '../../admin/AdminLayout';
 import { toast } from 'react-hot-toast';
 
 const AdminUsers = () => {

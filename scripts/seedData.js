@@ -1,10 +1,10 @@
 const mongoose = require('mongoose');
-const User = require('../models/User');
-const Seller = require('../models/Seller');
-const Horse = require('../models/Horse');
-const Transaction = require('../models/Transaction');
-const ActivityLog = require('../models/ActivityLog');
-const Category = require('../models/Category');
+const User = require('../backend/src/models/User');
+const Seller = require('../backend/src/models/Seller');
+const Horse = require('../backend/src/models/Horse');
+const Transaction = require('../backend/src/models/Transaction');
+const ActivityLog = require('../backend/src/models/ActivityLog');
+const Category = require('../backend/src/models/Category');
 const dotenv = require('dotenv');
 const readline = require('readline');
 
