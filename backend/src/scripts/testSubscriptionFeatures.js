@@ -8,6 +8,7 @@ let testData = {
     royalSellerToken: '',
     gallopSellerToken: '',
     trotSellerToken: '',
+    freeSellerToken: '',
     userToken: ''
 };
 
@@ -29,6 +30,12 @@ const config = {
         email: 'trot@test.com',
         password: 'seller123',
         name: 'Trot Stables',
+        role: 'user'
+    },
+    freeSeller: {
+        email: 'free@test.com',
+        password: 'seller123',
+        name: 'Free Stables',
         role: 'user'
     },
     user: {
@@ -70,7 +77,7 @@ const testSuites = [
                     // Verify subscription is inactive
                     if (!sellerResult.seller.subscription || 
                         sellerResult.seller.subscription.status !== 'inactive' || 
-                        sellerResult.seller.subscription.type !== null) {
+                        sellerResult.seller.subscription.plan !== null) {
                         throw new Error('Initial subscription should be inactive with no plan type');
                     }
                 }
@@ -99,7 +106,7 @@ const testSuites = [
                     // Verify subscription is inactive
                     if (!sellerResult.seller.subscription || 
                         sellerResult.seller.subscription.status !== 'inactive' || 
-                        sellerResult.seller.subscription.type !== null) {
+                        sellerResult.seller.subscription.plan !== null) {
                         throw new Error('Initial subscription should be inactive with no plan type');
                     }
                 }
@@ -128,7 +135,7 @@ const testSuites = [
                     // Verify subscription is inactive
                     if (!sellerResult.seller.subscription || 
                         sellerResult.seller.subscription.status !== 'inactive' || 
-                        sellerResult.seller.subscription.type !== null) {
+                        sellerResult.seller.subscription.plan !== null) {
                         throw new Error('Initial subscription should be inactive with no plan type');
                     }
                 }
@@ -138,6 +145,37 @@ const testSuites = [
                 run: async () => {
                     const result = await makeRequest('POST', '/auth/register', config.user);
                     testData.userToken = result.token;
+                }
+            },
+            {
+                name: 'Register Free Plan Seller',
+                run: async () => {
+                    // Register as user first
+                    const userResult = await makeRequest('POST', '/auth/register', config.freeSeller);
+                    testData.freeSellerToken = userResult.token;
+
+                    // Create seller profile with required fields
+                    const sellerResult = await makeRequest('POST', '/sellers/profile', {
+                        businessName: 'Free Stables',
+                        description: 'Basic horse stables',
+                        location: {
+                            state: 'Gujarat',
+                            city: 'Ahmedabad',
+                            pincode: '380001'
+                        },
+                        contactDetails: {
+                            phone: '9876543213',
+                            email: 'free@test.com',
+                            whatsapp: '9876543213'
+                        }
+                    }, userResult.token);
+
+                    // Verify subscription is inactive
+                    if (!sellerResult.seller.subscription || 
+                        sellerResult.seller.subscription.status !== 'inactive' || 
+                        sellerResult.seller.subscription.plan !== null) {
+                        throw new Error('Initial subscription should be inactive with no plan type');
+                    }
                 }
             }
         ]
@@ -187,7 +225,7 @@ const testSuites = [
                     if (!subResult.success || 
                         !subResult.subscription || 
                         subResult.subscription.status !== 'active' || 
-                        subResult.subscription.type !== 'Royal Stallion') {
+                        subResult.subscription.plan !== 'Royal Stallion') {
                         throw new Error('Subscription should be active with Royal Stallion plan');
                     }
                 }
@@ -225,7 +263,7 @@ const testSuites = [
                     if (!subResult.success || 
                         !subResult.subscription || 
                         subResult.subscription.status !== 'active' || 
-                        subResult.subscription.type !== 'Gallop') {
+                        subResult.subscription.plan !== 'Gallop') {
                         throw new Error('Subscription should be active with Gallop plan');
                     }
                 }
@@ -263,8 +301,57 @@ const testSuites = [
                     if (!subResult.success || 
                         !subResult.subscription || 
                         subResult.subscription.status !== 'active' || 
-                        subResult.subscription.type !== 'Trot') {
+                        subResult.subscription.plan !== 'Trot') {
                         throw new Error('Subscription should be active with Trot plan');
+                    }
+                }
+            },
+            {
+                name: 'Subscribe to Free Plan',
+                run: async () => {
+                    // First verify the plan exists in available plans
+                    const plansResult = await makeRequest('GET', '/sellers/plans');
+                    const freePlan = plansResult.plans.find(p => p.name === 'Free');
+                    if (!freePlan) {
+                        throw new Error('Free plan not found in available plans');
+                    }
+
+                    // For Free plan, directly subscribe without payment
+                    const subscriptionResult = await makeRequest('POST', '/sellers/subscribe', {
+                        package: 'Free',
+                        duration: 7,
+                        amount: 0
+                    }, testData.freeSellerToken);
+
+                    if (!subscriptionResult.success || !subscriptionResult.subscription) {
+                        throw new Error('Failed to activate Free plan');
+                    }
+
+                    // Verify subscription details
+                    const subResult = await makeRequest('GET', '/sellers/subscription', null, testData.freeSellerToken);
+                    if (!subResult.success || 
+                        !subResult.subscription || 
+                        subResult.subscription.status !== 'active' || 
+                        subResult.subscription.plan !== 'Free' ||
+                        !subResult.subscription.startDate ||
+                        !subResult.subscription.endDate) {
+                        throw new Error('Subscription details are incorrect');
+                    }
+
+                    // Verify subscription duration (7 days)
+                    const startDate = new Date(subResult.subscription.startDate);
+                    const endDate = new Date(subResult.subscription.endDate);
+                    const durationInDays = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24));
+                    if (durationInDays !== 7) {
+                        throw new Error(`Incorrect subscription duration: ${durationInDays} days instead of 7 days`);
+                    }
+
+                    // Verify transaction was created
+                    if (!subscriptionResult.transaction || 
+                        subscriptionResult.transaction.amount !== 0 ||
+                        subscriptionResult.transaction.status !== 'completed' ||
+                        subscriptionResult.transaction.subscriptionDetails.duration !== 7) {
+                        throw new Error('Transaction details are incorrect');
                     }
                 }
             }
@@ -297,6 +384,50 @@ const testSuites = [
                     const result = await makeRequest('GET', '/sellers/subscription', null, testData.trotSellerToken);
                     if (!result.success || !result.subscription) {
                         throw new Error('Failed to get Trot subscription');
+                    }
+                }
+            },
+            {
+                name: 'Verify Free Plan Features',
+                run: async () => {
+                    const result = await makeRequest('GET', '/sellers/subscription', null, testData.freeSellerToken);
+                    if (!result.success || !result.subscription) {
+                        throw new Error('Failed to get Free plan subscription');
+                    }
+
+                    // Verify subscription status and type
+                    if (result.subscription.status !== 'active' || 
+                        result.subscription.plan !== 'Free') {
+                        throw new Error('Subscription status or type is incorrect');
+                    }
+
+                    // Verify specific Free plan features
+                    const features = result.subscription.features;
+                    
+                    // Core features
+                    if (features.maxPhotos !== 1) throw new Error('Incorrect photo limit');
+                    if (features.maxListings !== 1) throw new Error('Incorrect listing limit');
+                    if (features.listingDuration !== 7) throw new Error('Incorrect listing duration');
+                    if (features.verificationLevel !== 'basic') throw new Error('Incorrect verification level');
+                    
+                    // Premium features should be disabled
+                    if (features.virtualStableTour !== false) throw new Error('Virtual stable tour should be disabled');
+                    if (features.analytics !== false) throw new Error('Analytics should be disabled');
+                    if (features.homepageSpotlight !== 0) throw new Error('Homepage spotlight should be 0');
+                    if (features.featuredListingBoosts.count !== 0) throw new Error('Featured listing boosts count should be 0');
+                    if (features.featuredListingBoosts.duration !== 0) throw new Error('Featured listing boosts duration should be 0');
+                    if (features.priorityPlacement !== false) throw new Error('Priority placement should be disabled');
+                    
+                    // Basic features
+                    if (features.searchPlacement !== 'basic') throw new Error('Incorrect search placement');
+                    if (features.socialMediaSharing !== false) throw new Error('Social media sharing should be disabled');
+                    if (features.seriousBuyerAccess !== false) throw new Error('Serious buyer access should be disabled');
+                    
+                    // Verify badges
+                    if (!Array.isArray(features.badges) || 
+                        features.badges.length !== 1 || 
+                        !features.badges.includes('Free User')) {
+                        throw new Error('Incorrect badges');
                     }
                 }
             }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardHeader from './DashboardHeader';
 import DashboardStats from './DashboardStats';
 import RecentActivities from './RecentActivities';
@@ -7,6 +7,9 @@ import DashboardSidebar from './DashboardSidebar';
 
 const Dashboard = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, []);
 
     const toggleSidebar = (value) => {
         setIsSidebarOpen(value ?? !isSidebarOpen);

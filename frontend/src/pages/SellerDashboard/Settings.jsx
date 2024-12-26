@@ -42,6 +42,7 @@ const Settings = () => {
 
   useEffect(() => {
     fetchSettings();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   const fetchSettings = async () => {

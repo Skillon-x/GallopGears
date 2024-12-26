@@ -16,6 +16,7 @@ const Listings = () => {
 
   useEffect(() => {
     fetchListings();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   const fetchListings = async () => {

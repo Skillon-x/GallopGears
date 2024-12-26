@@ -25,6 +25,7 @@ import {
   Activity,
   Stethoscope,
   Star,
+  Store,
 } from 'lucide-react';
 import MainNavigation from '../pages/Browse/MainNavigation';
 import { useAuth } from '../context/AuthContext';
@@ -41,33 +42,34 @@ const ImageGallery = ({ images }) => {
   };
 
   return (
-    <div className="relative aspect-[16/9] bg-gray-100 rounded-lg overflow-hidden">
+    <div className="relative aspect-[16/9] bg-gradient-to-br from-accent/30 via-white to-primary/30 rounded-2xl overflow-hidden shadow-2xl border border-white/50">
+      <div className="absolute inset-0 backdrop-blur-sm bg-white/30" />
       <img
         src={images[currentIndex]?.url || '/placeholder-horse.jpg'}
         alt="Horse"
-        className="w-full h-full object-cover"
+        className="relative w-full h-full object-cover"
       />
       {images.length > 1 && (
         <>
           <button
             onClick={prevImage}
-            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+            className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/20 backdrop-blur-sm text-white hover:bg-black/40 transition-all duration-200"
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
           <button
             onClick={nextImage}
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+            className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/20 backdrop-blur-sm text-white hover:bg-black/40 transition-all duration-200"
           >
             <ChevronRight className="w-6 h-6" />
           </button>
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2 backdrop-blur-sm bg-black/20 px-4 py-2 rounded-full">
             {images.map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => setCurrentIndex(idx)}
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  idx === currentIndex ? 'bg-white' : 'bg-white/50'
+                className={`w-2.5 h-2.5 rounded-full transition-all duration-200 ${
+                  idx === currentIndex ? 'bg-white scale-110' : 'bg-white/50 hover:bg-white/70'
                 }`}
               />
             ))}
@@ -120,6 +122,8 @@ const HorseDetails = () => {
 
         if (horseResponse?.data?.success) {
           const favoriteIds = favoritesResponse?.data?.favorites?.map(fav => fav._id) || [];
+          console.log("Horse data received:", horseResponse.data.horse);
+          console.log("Seller data:", horseResponse.data.horse.seller);
           setHorse({
             ...horseResponse.data.horse,
             isFavorited: favoriteIds.includes(id)
@@ -183,16 +187,16 @@ const HorseDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-accent/30 via-white to-primary/30">
         <MainNavigation />
         <main className="container mx-auto px-4 py-8">
-          <div className="animate-pulse space-y-4">
-            <div className="h-96 bg-gray-200 rounded-lg" />
-            <div className="h-8 bg-gray-200 rounded w-1/2" />
-            <div className="h-4 bg-gray-200 rounded w-1/4" />
+          <div className="animate-pulse space-y-6">
+            <div className="h-[60vh] bg-white/50 backdrop-blur-sm rounded-2xl" />
+            <div className="h-8 bg-white/50 backdrop-blur-sm rounded-xl w-1/2" />
+            <div className="h-4 bg-white/50 backdrop-blur-sm rounded-xl w-1/4" />
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-24 bg-gray-200 rounded-lg" />
+                <div key={i} className="h-24 bg-white/50 backdrop-blur-sm rounded-xl" />
               ))}
             </div>
           </div>
@@ -203,10 +207,10 @@ const HorseDetails = () => {
 
   if (error || !horse) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-accent/30 via-white to-primary/30">
         <MainNavigation />
         <main className="container mx-auto px-4 py-8">
-          <div className="bg-red-50 text-red-600 p-4 rounded-lg flex items-center">
+          <div className="backdrop-blur-sm bg-red-50/80 text-red-600 p-6 rounded-2xl border border-red-100 flex items-center justify-center">
             <AlertCircle className="w-5 h-5 mr-2" />
             {error || 'Horse not found'}
           </div>
@@ -216,98 +220,112 @@ const HorseDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-accent/30 via-white to-primary/30">
       <MainNavigation />
       
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 pt-20 sm:pt-24 lg:pt-28 pb-8">
         <div className="max-w-7xl mx-auto space-y-8">
           {/* Status Badges */}
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-wrap items-center gap-3">
             {horse?.featured?.active && (
-              <Badge active={true}>
-                <Award className="w-4 h-4 mr-1" />
-                Featured
-              </Badge>
+              <div className="backdrop-blur-sm bg-white/80 px-4 py-2 rounded-full border border-white/50 text-primary flex items-center gap-2">
+                <Award className="w-4 h-4" />
+                <span className="text-sm font-medium">Featured</span>
+              </div>
             )}
             {horse.boost?.active && (
-              <Badge active={true}>
-                <Activity className="w-4 h-4 mr-1" />
-                Boosted
-              </Badge>
+              <div className="backdrop-blur-sm bg-white/80 px-4 py-2 rounded-full border border-white/50 text-primary flex items-center gap-2">
+                <Activity className="w-4 h-4" />
+                <span className="text-sm font-medium">Boosted</span>
+              </div>
             )}
             {horse.verificationStatus === 'verified' && (
-              <Badge active={true}>
-                <CheckCircle className="w-4 h-4 mr-1" />
-                Verified
-              </Badge>
+              <div className="backdrop-blur-sm bg-white/80 px-4 py-2 rounded-full border border-white/50 text-green-600 flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                <span className="text-sm font-medium">Verified</span>
+              </div>
             )}
-            <Badge active={horse.listingStatus === 'active'}>
-              {horse.listingStatus.charAt(0).toUpperCase() + horse.listingStatus.slice(1)}
-            </Badge>
+            <div className={`backdrop-blur-sm px-4 py-2 rounded-full border border-white/50 flex items-center gap-2 ${
+              horse.listingStatus === 'active' 
+                ? 'bg-green-50/80 text-green-600 border-green-100' 
+                : 'bg-gray-50/80 text-gray-600 border-gray-100'
+            }`}>
+              <span className="text-sm font-medium">
+                {horse.listingStatus.charAt(0).toUpperCase() + horse.listingStatus.slice(1)}
+              </span>
+            </div>
           </div>
 
           {/* Image Gallery */}
           <ImageGallery images={horse?.images || []} />
 
           {/* Title Section */}
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-tertiary">{horse?.name}</h1>
-              <p className="text-lg text-primary font-semibold mt-2">
-                ₹{horse?.price?.toLocaleString()}
-              </p>
-              <p className="text-tertiary/70 flex items-center mt-2">
-                <MapPin className="w-4 h-4 mr-1" />
-                {horse?.location?.city}, {horse?.location?.state}
-              </p>
+          <div className="backdrop-blur-sm bg-white/90 rounded-2xl border border-white p-6 shadow-xl">
+            <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+              <div>
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-tertiary">{horse?.name}</h1>
+                <p className="text-xl sm:text-2xl text-primary font-semibold mt-3">
+                  ₹{horse?.price?.toLocaleString()}
+                </p>
+                <p className="text-tertiary/70 flex items-center mt-3">
+                  <MapPin className="w-5 h-5 mr-2" />
+                  {horse?.location?.city}, {horse?.location?.state}
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleFavorite}
+                  className={`p-3 rounded-xl border transition-all duration-200 ${
+                    horse?.isFavorited
+                      ? 'bg-primary/10 border-primary text-primary shadow-lg scale-105'
+                      : 'border-gray-200 text-tertiary hover:border-primary hover:text-primary hover:scale-105'
+                  }`}
+                >
+                  <Heart className={`w-6 h-6 ${horse?.isFavorited ? 'fill-current' : ''}`} />
+                </button>
+                <button
+                  onClick={handleEnquire}
+                  className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all duration-200 hover:scale-105 shadow-lg"
+                >
+                  <MessageSquare className="w-5 h-5" />
+                  <span className="font-medium">Enquire Now</span>
+                </button>
+              </div>
             </div>
-            <div className="flex space-x-3">
-              <button
-                onClick={handleFavorite}
-                className={`p-3 rounded-lg border transition-colors ${
-                  horse?.isFavorited
-                    ? 'bg-primary/10 border-primary text-primary'
-                    : 'border-gray-200 text-tertiary hover:border-primary hover:text-primary'
-                }`}
-              >
-                <Heart className={`w-5 h-5 ${horse?.isFavorited ? 'fill-current' : ''}`} />
-              </button>
-              <button
-                onClick={handleEnquire}
-                className="flex items-center space-x-2 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-              >
-                <MessageSquare className="w-5 h-5" />
-                <span className="font-medium">Enquire Now</span>
-              </button>
-            </div>
-          </div>
 
-          {/* Statistics */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="flex items-center space-x-2">
-                <Eye className="w-5 h-5 text-tertiary/70" />
+            {/* Statistics */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-primary/10 rounded-lg">
+                  <Eye className="w-5 h-5 text-primary" />
+                </div>
                 <div>
                   <p className="text-sm text-tertiary/70">Views</p>
                   <p className="font-medium text-tertiary">{horse.statistics?.views || 0}</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <MessageSquare className="w-5 h-5 text-tertiary/70" />
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-green-100 rounded-lg">
+                  <MessageSquare className="w-5 h-5 text-green-600" />
+                </div>
                 <div>
                   <p className="text-sm text-tertiary/70">Inquiries</p>
                   <p className="font-medium text-tertiary">{horse.statistics?.inquiries || 0}</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <Clock className="w-5 h-5 text-tertiary/70" />
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-orange-100 rounded-lg">
+                  <Clock className="w-5 h-5 text-orange-600" />
+                </div>
                 <div>
                   <p className="text-sm text-tertiary/70">Listed On</p>
                   <p className="font-medium text-tertiary">{formatDate(horse.createdAt)}</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <Tag className="w-5 h-5 text-tertiary/70" />
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-blue-100 rounded-lg">
+                  <Tag className="w-5 h-5 text-blue-600" />
+                </div>
                 <div>
                   <p className="text-sm text-tertiary/70">Expires On</p>
                   <p className="font-medium text-tertiary">{formatDate(horse.expiryDate)}</p>
@@ -317,152 +335,156 @@ const HorseDetails = () => {
           </div>
 
           {/* Basic Details */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <SpecificationCard
-              title="Age"
-              value={`${horse.age?.years}y ${horse.age?.months}m`}
-              icon={Calendar}
-            />
-            <SpecificationCard
-              title="Gender"
-              value={horse.gender}
-              icon={BadgeDollarSign}
-            />
-            <SpecificationCard
-              title="Color"
-              value={horse.color}
-              icon={Palette}
-            />
-            <SpecificationCard
-              title="Breed"
-              value={horse.breed}
-              icon={Star}
-            />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="backdrop-blur-sm bg-white/90 p-4 rounded-2xl border border-white shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-primary/10 rounded-lg">
+                  <Calendar className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-tertiary/70">Age</p>
+                  <p className="font-medium text-tertiary">{`${horse.age?.years}y ${horse.age?.months}m`}</p>
+                </div>
+              </div>
+            </div>
+            <div className="backdrop-blur-sm bg-white/90 p-4 rounded-2xl border border-white shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-green-100 rounded-lg">
+                  <BadgeDollarSign className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-tertiary/70">Gender</p>
+                  <p className="font-medium text-tertiary">{horse.gender}</p>
+                </div>
+              </div>
+            </div>
+            <div className="backdrop-blur-sm bg-white/90 p-4 rounded-2xl border border-white shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-orange-100 rounded-lg">
+                  <Palette className="w-5 h-5 text-orange-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-tertiary/70">Color</p>
+                  <p className="font-medium text-tertiary">{horse.color}</p>
+                </div>
+              </div>
+            </div>
+            <div className="backdrop-blur-sm bg-white/90 p-4 rounded-2xl border border-white shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-blue-100 rounded-lg">
+                  <Star className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-tertiary/70">Breed</p>
+                  <p className="font-medium text-tertiary">{horse.breed}</p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Details Sections */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="md:col-span-2 space-y-6">
+          {/* Description & Specifications */}
+          <div className="grid lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2 space-y-4">
               {/* Description */}
-              <section>
-                <h2 className="text-xl font-semibold text-tertiary mb-4">Description</h2>
-                <p className="text-tertiary/70 whitespace-pre-line">{horse.description}</p>
-              </section>
+              <div className="backdrop-blur-sm bg-white/90 rounded-2xl border border-white p-6 shadow-xl">
+                <h2 className="text-xl font-bold text-tertiary mb-4">Description</h2>
+                <div className="prose prose-sm max-w-none text-tertiary/80">
+                  {horse?.description?.split('\n').map((paragraph, index) => (
+                    <p key={index} className="mb-4">{paragraph}</p>
+                  ))}
+                </div>
+              </div>
 
               {/* Specifications */}
-              <section>
-                <h2 className="text-xl font-semibold text-tertiary mb-4">Specifications</h2>
-                <div className="bg-white rounded-lg border border-gray-200 divide-y">
-                  <div className="flex py-3 px-4">
-                    <span className="w-1/3 text-tertiary/70">Training Level</span>
-                    <span className="w-2/3 text-tertiary">{horse.specifications?.training}</span>
-                  </div>
-                  <div className="flex py-3 px-4">
-                    <span className="w-1/3 text-tertiary/70">Disciplines</span>
-                    <span className="w-2/3 text-tertiary">
-                      {horse.specifications?.discipline?.join(', ')}
-                    </span>
-                  </div>
-                  <div className="flex py-3 px-4">
-                    <span className="w-1/3 text-tertiary/70">Temperament</span>
-                    <span className="w-2/3 text-tertiary">{horse.specifications?.temperament}</span>
-                  </div>
-                  <div className="flex py-3 px-4">
-                    <span className="w-1/3 text-tertiary/70">Health Status</span>
-                    <span className="w-2/3 text-tertiary">{horse.specifications?.healthStatus}</span>
-                  </div>
-                  <div className="flex py-3 px-4">
-                    <span className="w-1/3 text-tertiary/70">Vaccination</span>
-                    <span className="w-2/3 text-tertiary flex items-center">
-                      {horse.specifications?.vaccination ? (
-                        <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                      ) : (
-                        <XCircle className="w-5 h-5 text-red-500 mr-2" />
-                      )}
-                      {horse.specifications?.vaccination ? 'Vaccinated' : 'Not Vaccinated'}
-                    </span>
-                  </div>
-                  <div className="flex py-3 px-4">
-                    <span className="w-1/3 text-tertiary/70">Registration Papers</span>
-                    <span className="w-2/3 text-tertiary flex items-center">
-                      {horse.specifications?.papers ? (
-                        <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-                      ) : (
-                        <XCircle className="w-5 h-5 text-red-500 mr-2" />
-                      )}
-                      {horse.specifications?.papers ? 'Available' : 'Not Available'}
-                    </span>
+              <div className="backdrop-blur-sm bg-white/90 rounded-2xl border border-white p-6 shadow-xl">
+                <h2 className="text-xl font-bold text-tertiary mb-4">Specifications</h2>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {Object.entries(horse?.specifications || {}).map(([key, value]) => (
+                    <div key={key} className="flex items-center gap-3">
+                      <div className="p-2.5 bg-primary/10 rounded-lg">
+                        <CheckCircle className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-tertiary/70">{key}</p>
+                        <p className="font-medium text-tertiary">{value}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Disciplines */}
+              {horse?.disciplines?.length > 0 && (
+                <div className="backdrop-blur-sm bg-white/90 rounded-2xl border border-white p-6 shadow-xl">
+                  <h2 className="text-xl font-bold text-tertiary mb-4">Disciplines</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {horse.disciplines.map((discipline) => (
+                      <span
+                        key={discipline}
+                        className="px-4 py-2 bg-primary/10 text-primary rounded-lg font-medium"
+                      >
+                        {discipline}
+                      </span>
+                    ))}
                   </div>
                 </div>
-              </section>
-
-              {/* Verification Details */}
-              {horse.verificationStatus === 'verified' && (
-                <section>
-                  <h2 className="text-xl font-semibold text-tertiary mb-4">Verification</h2>
-                  <div className="bg-white rounded-lg border border-gray-200 p-4">
-                    <div className="flex items-center space-x-2 text-green-600 mb-4">
-                      <CheckCircle className="w-5 h-5" />
-                      <span className="font-medium">Verified Listing</span>
-                    </div>
-                    <p className="text-tertiary/70">
-                      Verified on {formatDate(horse.verificationDetails?.verifiedAt)}
-                    </p>
-                    {horse.verificationDetails?.documents?.length > 0 && (
-                      <div className="mt-4">
-                        <p className="text-sm font-medium text-tertiary mb-2">Verified Documents:</p>
-                        <div className="space-y-2">
-                          {horse.verificationDetails.documents.map((doc, idx) => (
-                            <div key={idx} className="flex items-center space-x-2 text-tertiary/70">
-                              <FileCheck className="w-4 h-4" />
-                              <span>{doc.type.charAt(0).toUpperCase() + doc.type.slice(1)} Document</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </section>
               )}
             </div>
 
             {/* Seller Information */}
-            <div>
-              <div className="bg-white rounded-lg border border-gray-200 p-6 sticky top-24">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <User className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-tertiary">{horse.seller?.businessName}</h3>
-                    <p className="text-sm text-tertiary/70">Member since {new Date(horse.seller?.createdAt).getFullYear()}</p>
-                  </div>
+            <div className="backdrop-blur-sm bg-white/90 rounded-2xl border border-white p-6 shadow-xl h-fit lg:sticky lg:top-24">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                  {horse?.seller?.profileImage ? (
+                    <img 
+                      src={horse.seller.profileImage} 
+                      alt={horse?.seller?.businessName} 
+                      className="w-full h-full rounded-full object-cover"
+                    />
+                  ) : (
+                    <Store className="w-8 h-8 text-primary" />
+                  )}
                 </div>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2 text-sm text-tertiary">
-                    <Phone className="w-4 h-4" />
-                    <span>{horse.seller?.contactDetails?.phone}</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-sm text-tertiary">
-                    <Mail className="w-4 h-4" />
-                    <span>{horse.seller?.contactDetails?.email}</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-sm text-tertiary">
-                    <MapPin className="w-4 h-4" />
-                    <span>
-                      {horse.seller?.location?.city}, {horse.seller?.location?.state}
-                      {horse.seller?.location?.pincode && ` - ${horse.seller?.location?.pincode}`}
-                    </span>
-                  </div>
+                <div>
+                  <h3 className="text-lg font-bold text-tertiary">
+                    {horse?.seller?.businessName || 'Business Name'}
+                  </h3>
+                  <p className="text-sm text-tertiary/70">
+                    Seller ID: {horse?.seller?.id?.slice(-8)}
+                  </p>
                 </div>
-                <button
-                  onClick={handleEnquire}
-                  className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors mt-6"
-                >
-                  <MessageSquare className="w-5 h-5" />
-                  <span className="font-medium">Contact Seller</span>
-                </button>
               </div>
+
+              <div className="space-y-4">
+                {(horse?.seller?.location?.city || horse?.seller?.location?.state) && (
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-primary/10 rounded-lg">
+                      <MapPin className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-tertiary/70">Location</p>
+                      <p className="font-medium text-tertiary">
+                        {[horse?.seller?.location?.city, horse?.seller?.location?.state]
+                          .filter(Boolean)
+                          .join(', ')}
+                        {horse?.seller?.location?.pincode && (
+                          <span className="text-tertiary/70 text-sm ml-1">
+                            - {horse.seller.location.pincode}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={handleEnquire}
+                className="w-full mt-6 flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all duration-200 hover:scale-[1.02] shadow-lg"
+              >
+                <MessageSquare className="w-5 h-5" />
+                <span className="font-medium">Contact Seller</span>
+              </button>
             </div>
           </div>
         </div>

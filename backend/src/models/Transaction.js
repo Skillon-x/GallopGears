@@ -27,9 +27,9 @@ const transactionSchema = new mongoose.Schema({
     subscriptionDetails: {
         package: {
             type: String,
-            enum: ['Royal Stallion', 'Gallop', 'Trot']
+            enum: ['Free', 'Royal Stallion', 'Gallop', 'Trot']
         },
-        duration: Number, // in months
+        duration: Number, // in days
         startDate: Date,
         endDate: Date
     },

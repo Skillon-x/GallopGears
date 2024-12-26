@@ -18,7 +18,12 @@ const PACKAGE_LISTING_LIMITS = {
         maxActive: 2,
         duration: 30, // 1 month
         boostDuration: 0 // No boost feature
-    }
+    },
+    'Free': {
+    maxActive: 1,
+    duration: 7, // 1 month
+    boostDuration: 0 // No boost feature
+}
 };
 
 // @desc    Verify listing count limits for seller

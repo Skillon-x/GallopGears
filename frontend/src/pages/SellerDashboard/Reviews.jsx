@@ -6,7 +6,9 @@ import DashboardSidebar from './DashboardSidebar';
 
 const ReviewCard = ({ review }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       <div className="p-4">

@@ -61,7 +61,7 @@ const sellerSchema = new mongoose.Schema({
     subscription: {
         plan: {
             type: String,
-            enum: ['Royal Stallion', 'Gallop', 'Trot', null],
+            enum: ['Free', 'Royal Stallion', 'Gallop', 'Trot', null],
             default: null
         },
         status: {

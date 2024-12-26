@@ -15,7 +15,8 @@ const ActivityLog = require('../models/ActivityLog');
 const PACKAGE_PHOTO_LIMITS = {
     'Royal Stallion': 20,
     'Gallop': 10,
-    'Trot': 5
+    'Trot': 5,
+    'Free': 1
 };
 
 // @desc    Upload photos

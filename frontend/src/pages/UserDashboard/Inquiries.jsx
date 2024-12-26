@@ -209,4 +209,4 @@ const Inquiries = () => {
   );
 };
 
-export default Inquiries; 
+export default Inquiries;

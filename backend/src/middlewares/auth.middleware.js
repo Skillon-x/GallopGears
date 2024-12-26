@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Seller = require('../models/Seller');
 const Horse = require('../models/Horse');
+const ActivityLog = require('../models/ActivityLog');
 
 // Protect routes
 exports.protect = async (req, res, next) => {
@@ -19,39 +20,71 @@ exports.protect = async (req, res, next) => {
             });
         }
 
-        try {
-            // Verify token
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            req.user = await User.findById(decoded.id).select('-password');
+        // Verify token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = await User.findById(decoded.id);
 
-            if (!req.user) {
-                return res.status(401).json({
-                    success: false,
-                    message: 'User not found'
-                });
-            }
-
-            // If user is a seller, attach seller info
-            if (req.user.role === 'seller') {
-                req.seller = await Seller.findOne({ user: req.user._id });
-                if (!req.seller) {
-                    // If seller profile doesn't exist, revert role to user
-                    req.user.role = 'user';
-                    await req.user.save();
-                }
-            }
-
-            next();
-        } catch (err) {
+        if (!req.user) {
             return res.status(401).json({
                 success: false,
-                message: 'Not authorized to access this route'
+                message: 'User not found'
             });
         }
+
+        // If user is a seller, check subscription status
+        if (req.user.role === 'seller') {
+            const seller = await Seller.findOne({ user: req.user._id });
+            if (seller && seller.subscription) {
+                // Check if subscription has expired
+                if (seller.subscription.status === 'active' && 
+                    seller.subscription.endDate && 
+                    new Date() > new Date(seller.subscription.endDate)) {
+                    
+                    // Update subscription status to expired
+                    seller.subscription = {
+                        ...seller.subscription,
+                        status: 'expired',
+                        features: {
+                            maxPhotos: 1,
+                            maxListings: 1,
+                            listingDuration: 7,
+                            verificationLevel: 'basic',
+                            virtualStableTour: false,
+                            analytics: false,
+                            homepageSpotlight: 0,
+                            featuredListingBoosts: {
+                                count: 0,
+                                duration: 0
+                            },
+                            priorityPlacement: false,
+                            badges: ['Free User'],
+                            searchPlacement: 'basic',
+                            socialMediaSharing: false,
+                            seriousBuyerAccess: false
+                        }
+                    };
+                    await seller.save();
+
+                    // Log the expiry
+                    await ActivityLog.create({
+                        user: req.user._id,
+                        action: 'subscription_expired',
+                        entityType: 'subscription',
+                        entityId: seller._id,
+                        description: `Subscription expired for plan: ${seller.subscription.plan}`,
+                        status: 'success'
+                    });
+                }
+                req.seller = seller;
+            }
+        }
+
+        next();
     } catch (error) {
-        res.status(500).json({
+        console.error('Auth middleware error:', error);
+        return res.status(401).json({
             success: false,
-            message: 'Server error'
+            message: 'Not authorized to access this route'
         });
     }
 };

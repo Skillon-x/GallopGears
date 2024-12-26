@@ -10,20 +10,61 @@ import {
 } from 'lucide-react';
 import { api } from '../../services/api';
 
-const StatCard = ({ title, value, icon: Icon, subtitle, variant = 'default' }) => (
-    <div className={`bg-white p-6 rounded-xl shadow-sm border ${variant === 'premium' ? 'border-yellow-200 bg-yellow-50' : 'border-gray-100'}`}>
-        <div className="flex items-center justify-between">
-            <div>
-                <p className="text-sm font-medium text-tertiary/70">{title}</p>
-                <h3 className="text-2xl font-bold text-tertiary mt-1">{value}</h3>
-                {subtitle && <p className="text-sm text-tertiary/60 mt-1">{subtitle}</p>}
-            </div>
-            <div className={`p-3 rounded-lg ${variant === 'premium' ? 'bg-yellow-100' : 'bg-primary/10'}`}>
-                <Icon className={`h-6 w-6 ${variant === 'premium' ? 'text-yellow-600' : 'text-primary'}`} />
+const StatCard = ({ title, value, icon: Icon, subtitle, variant = 'default' }) => {
+    const getVariantStyles = () => {
+        switch (variant) {
+            case 'success':
+                return {
+                    border: 'border-green-200',
+                    bg: 'bg-green-50',
+                    iconBg: 'bg-green-100',
+                    iconColor: 'text-green-600',
+                    subtitleColor: 'text-green-600'
+                };
+            case 'warning':
+                return {
+                    border: 'border-yellow-200',
+                    bg: 'bg-yellow-50',
+                    iconBg: 'bg-yellow-100',
+                    iconColor: 'text-yellow-600',
+                    subtitleColor: 'text-yellow-600'
+                };
+            case 'error':
+                return {
+                    border: 'border-red-200',
+                    bg: 'bg-red-50',
+                    iconBg: 'bg-red-100',
+                    iconColor: 'text-red-600',
+                    subtitleColor: 'text-red-600'
+                };
+            default:
+                return {
+                    border: 'border-gray-100',
+                    bg: 'bg-white',
+                    iconBg: 'bg-primary/10',
+                    iconColor: 'text-primary',
+                    subtitleColor: 'text-tertiary/60'
+                };
+        }
+    };
+
+    const styles = getVariantStyles();
+
+    return (
+        <div className={`p-6 rounded-xl shadow-sm border ${styles.border} ${styles.bg}`}>
+            <div className="flex items-center justify-between">
+                <div>
+                    <p className="text-sm font-medium text-tertiary/70">{title}</p>
+                    <h3 className="text-2xl font-bold text-tertiary mt-1">{value}</h3>
+                    {subtitle && <p className={`text-sm mt-1 ${styles.subtitleColor} font-medium`}>{subtitle}</p>}
+                </div>
+                <div className={`p-3 rounded-lg ${styles.iconBg}`}>
+                    <Icon className={`h-6 w-6 ${styles.iconColor}`} />
+                </div>
             </div>
         </div>
-    </div>
-);
+    );
+};
 
 const DashboardStats = () => {
     const [stats, setStats] = useState(null);
@@ -101,8 +142,43 @@ const DashboardStats = () => {
         }
     };
 
-    const daysLeft = displayStats.subscription?.endDate ? 
-        Math.ceil((new Date(displayStats.subscription.endDate) - new Date()) / (1000 * 60 * 60 * 24)) : 0;
+    const getTimeRemaining = (endDate) => {
+        if (!endDate) return { text: 'No active plan', variant: 'error' };
+        
+        const now = new Date();
+        const end = new Date(endDate);
+        const diffMs = end - now;
+        
+        if (diffMs < 0) return { text: 'Expired', variant: 'error' };
+        
+        const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        
+        let text;
+        let variant;
+        
+        if (days > 30) {
+            text = `${days} days remaining`;
+            variant = 'success';
+        } else if (days > 0) {
+            text = days === 1 ? '1 day remaining' : `${days} days remaining`;
+            variant = days <= 7 ? 'warning' : 'success';
+        } else if (hours > 0) {
+            text = `${hours}h ${minutes}m remaining`;
+            variant = 'warning';
+        } else if (minutes > 0) {
+            text = `${minutes} minutes remaining`;
+            variant = 'error';
+        } else {
+            text = 'Expiring soon';
+            variant = 'error';
+        }
+        
+        return { text, variant };
+    };
+
+    const subscriptionInfo = getTimeRemaining(displayStats.subscription?.endDate);
 
     const formatResponseTime = (time) => {
         if (!time) return '0h';
@@ -118,9 +194,9 @@ const DashboardStats = () => {
                 <StatCard
                     title="Subscription Plan"
                     value={displayStats.subscription?.plan || 'No Plan'}
-                    subtitle={`${daysLeft} days remaining`}
+                    subtitle={subscriptionInfo.text}
                     icon={Crown}
-                    variant="premium"
+                    variant={subscriptionInfo.variant}
                 />
                 <StatCard
                     title="Total Views"

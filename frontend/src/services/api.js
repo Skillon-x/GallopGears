@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 // Base URL configuration
-const API_BASE_URL = 'http://localhost:5000/api';
-
+//const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://gallopgears.onrender.com/api'
 // Create axios instance with default config
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
@@ -642,10 +642,7 @@ export const api = {
         },
         subscribe: async (data) => {
             try {
-                const response = await apiClient.post(endpoints.sellers.subscribe, {
-                    package: data.package,
-                    duration: data.duration || 30 // Default to 30 days if not specified
-                });
+                const response = await apiClient.post(endpoints.sellers.subscribe, data);
                 return handleResponse(response);
             } catch (error) {
                 handleError(error);

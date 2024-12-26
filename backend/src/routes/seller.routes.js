@@ -33,6 +33,31 @@ router.get('/plans', async (req, res) => {
     try {
         const plans = [
             {
+                id: 'free',
+                name: 'Free',
+                price: 0,
+                features: {
+                    ...SUBSCRIPTION_FEATURES['Free'],
+                    maxListings: '1 listing',
+                    maxPhotos: '1 photo per listing',
+                    listingDuration: '7 days listing duration',
+                    verificationLevel: 'Basic verification',
+                    virtualStableTour: 'Not included',
+                    analytics: 'Not included',
+                    homepageSpotlight: 'Not included',
+                    featuredListingBoosts: {
+                        count: 'Not included',
+                        duration: 'Not included'
+                    },
+                    priorityPlacement: 'Standard placement',
+                    badges: ['Free User'],
+                    searchPlacement: 'Basic search placement',
+                    socialMediaSharing: 'Not included',
+                    seriousBuyerAccess: 'Not included'
+                },
+                duration: '7 days'
+            },
+            {
                 id: 'royal_stallion',
                 name: 'Royal Stallion',
                 price: 9999,
@@ -173,11 +198,12 @@ router.post('/subscribe', protect, authorize('seller'), async (req, res) => {
                     packageName === 'Gallop' ? 4999 : 
                     packageName === 'Trot' ? 1999 : 0,
             status: 'completed',
+            paymentMethod: packageName === 'Free' ? 'free' : req.body.paymentMethod,
             subscriptionDetails: {
                 package: packageName,
-                duration: packageName === 'Free' ? 'Unlimited' : (duration || 30),
+                duration: packageName === 'Free' ? 7 : (duration || 30),
                 startDate: new Date(),
-                endDate: packageName === 'Free' ? null : new Date(Date.now() + (duration || 30) * 24 * 60 * 60 * 1000)
+                endDate: new Date(Date.now() + (packageName === 'Free' ? 7 : (duration || 30)) * 24 * 60 * 60 * 1000)
             }
         });
 
@@ -188,7 +214,7 @@ router.post('/subscribe', protect, authorize('seller'), async (req, res) => {
                 subscription: {
                     plan: packageName,
                     startDate: new Date(),
-                    endDate: new Date(Date.now() + (duration || 30) * 24 * 60 * 60 * 1000),
+                    endDate: new Date(Date.now() + (packageName === 'Free' ? 7 : (duration || 30)) * 24 * 60 * 60 * 1000),
                     status: 'active',
                     transaction: transaction._id,
                     features: subscriptionFeatures

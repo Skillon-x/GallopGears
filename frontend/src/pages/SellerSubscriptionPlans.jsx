@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import {
     CheckCircle,
     Shield,
@@ -13,28 +12,39 @@ import {
     UserPlus,
     AlertCircle
 } from 'lucide-react';
-import { useTheme } from '@mui/material/styles';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
-
-// Add Razorpay script
 const loadRazorpay = () => {
     return new Promise((resolve) => {
         const script = document.createElement('script');
         script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-        script.onload = () => {
-            resolve(true);
-        };
-        script.onerror = () => {
-            resolve(false);
-        };
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
         document.body.appendChild(script);
     });
 };
 
 // Add subscription features constants
 const SUBSCRIPTION_FEATURES = {
+    'Free': {
+        maxPhotos: 1,
+        maxListings: 1,
+        listingDuration: 7,
+        verificationLevel: 'basic',
+        virtualStableTour: false,
+        analytics: false,
+        homepageSpotlight: 0,
+        featuredListingBoosts: {
+            count: 0,
+            duration: 0
+        },
+        priorityPlacement: false,
+        badges: ['Free User'],
+        searchPlacement: 'basic',
+        socialMediaSharing: false,
+        seriousBuyerAccess: false
+    },
     'Royal Stallion': {
         maxPhotos: 20,
         maxListings: 9999,
@@ -93,18 +103,24 @@ const SUBSCRIPTION_FEATURES = {
 
 const defaultPlans = [
     {
-        id: 'trot',
-        name: 'Trot',
-        price: 1999,
+        id: 'royal-stallion',
+        name: 'Royal Stallion',
+        price: 9999,
         period: '30 days',
         features: [
-            'Up to 5 horse listings',
-            'Basic verification level',
-            'Up to 5 photos per listing',
-            '30-day listing duration',
-            'Basic search placement',
-            'Basic seller badge',
-            'Standard support'
+            'Unlimited horse listings',
+            'Premium verification level',
+            'Up to 20 photos per listing',
+            '90-day listing duration',
+            'Premium search placement',
+            'Top Seller & Premium Stable badges',
+            'Advanced analytics dashboard',
+            'Homepage spotlight (5 slots)',
+            'Virtual stable tour',
+            'Featured listing boosts',
+            'Social media promotion',
+            'Serious buyer access',
+            'Premium support'
         ],
         recommended: false,
     },
@@ -128,24 +144,34 @@ const defaultPlans = [
         recommended: true,
     },
     {
-        id: 'royal-stallion',
-        name: 'Royal Stallion',
-        price: 9999,
+        id: 'trot',
+        name: 'Trot',
+        price: 1999,
         period: '30 days',
         features: [
-            'Unlimited horse listings',
-            'Premium verification level',
-            'Up to 20 photos per listing',
-            '90-day listing duration',
-            'Premium search placement',
-            'Top Seller & Premium Stable badges',
-            'Advanced analytics dashboard',
-            'Homepage spotlight (5 slots)',
-            'Virtual stable tour',
-            'Featured listing boosts',
-            'Social media promotion',
-            'Serious buyer access',
-            'Premium support'
+            'Up to 5 horse listings',
+            'Basic verification level',
+            'Up to 5 photos per listing',
+            '30-day listing duration',
+            'Basic search placement',
+            'Basic seller badge',
+            'Standard support'
+        ],
+        recommended: false,
+    },
+    {
+        id: 'free',
+        name: 'Free',
+        price: 0,
+        period: '7 days',
+        features: [
+            '1 horse listing',
+            'Basic verification level',
+            '1 photo per listing',
+            '7-day listing duration',
+            'Basic search placement',
+            'Free user badge',
+            'Basic support'
         ],
         recommended: false,
     }
@@ -166,63 +192,32 @@ const SellerSubscriptionPlans = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
         const fetchPlans = async () => {
             try {
-                console.log('Fetching subscription plans...');
                 const response = await api.sellers.getPlans();
-                console.log('Plans response:', response);
                 if (response?.data?.plans) {
                     const formattedPlans = response.data.plans.map(plan => {
-                        const features = [];
                         const planFeatures = SUBSCRIPTION_FEATURES[plan.name];
+                        const features = [];
 
                         if (planFeatures) {
-                            // Add listing features
+                            // Core features
                             features.push(`Up to ${planFeatures.maxListings === 9999 ? 'unlimited' : planFeatures.maxListings} horse listings`);
                             features.push(`Up to ${planFeatures.maxPhotos} photos per listing`);
                             features.push(`${planFeatures.listingDuration}-day listing duration`);
-
-                            // Add verification and placement features
                             features.push(`${planFeatures.verificationLevel.charAt(0).toUpperCase() + planFeatures.verificationLevel.slice(1)} verification level`);
                             features.push(`${planFeatures.searchPlacement.charAt(0).toUpperCase() + planFeatures.searchPlacement.slice(1)} search placement`);
-
-                            // Add badges
-                            if (planFeatures.badges && planFeatures.badges.length > 0) {
-                                features.push(planFeatures.badges.join(' & '));
-                            }
-
-                            // Add analytics
-                            if (planFeatures.analytics) {
-                                features.push(plan.name === 'Royal Stallion' ? 'Advanced analytics dashboard' : 'Analytics dashboard');
-                            }
-
-                            // Add homepage spotlight
-                            if (planFeatures.homepageSpotlight > 0) {
-                                features.push(`Homepage spotlight (${planFeatures.homepageSpotlight} slots)`);
-                            }
-
-                            // Add virtual stable tour
-                            if (planFeatures.virtualStableTour) {
-                                features.push('Virtual stable tour');
-                            }
-
-                            // Add featured listing boosts
-                            if (planFeatures.featuredListingBoosts.count > 0) {
-                                features.push('Featured listing boosts');
-                            }
-
-                            // Add social media
-                            if (planFeatures.socialMediaSharing) {
-                                features.push('Social media promotion');
-                            }
-
-                            // Add serious buyer access
-                            if (planFeatures.seriousBuyerAccess) {
-                                features.push('Serious buyer access');
-                            }
-
-                            // Add support level
+                            
+                            // Optional features
+                            planFeatures.badges?.length && features.push(planFeatures.badges.join(' & '));
+                            planFeatures.analytics && features.push(plan.name === 'Royal Stallion' ? 'Advanced analytics dashboard' : 'Analytics dashboard');
+                            planFeatures.homepageSpotlight > 0 && features.push(`Homepage spotlight (${planFeatures.homepageSpotlight} slots)`);
+                            planFeatures.virtualStableTour && features.push('Virtual stable tour');
+                            planFeatures.featuredListingBoosts.count > 0 && features.push('Featured listing boosts');
+                            planFeatures.socialMediaSharing && features.push('Social media promotion');
+                            planFeatures.seriousBuyerAccess && features.push('Serious buyer access');
+                            
+                            // Support level
                             features.push(plan.name === 'Royal Stallion' ? 'Premium support' :
-                                plan.name === 'Gallop' ? 'Priority support' :
-                                    'Standard support');
+                                plan.name === 'Gallop' ? 'Priority support' : 'Standard support');
                         }
 
                         return {
@@ -231,21 +226,18 @@ const SellerSubscriptionPlans = () => {
                             price: plan.name === 'Royal Stallion' ? 9999 :
                                 plan.name === 'Gallop' ? 4999 :
                                     plan.name === 'Trot' ? 1999 : 0,
-                            period: '30 days',
-                            features: features,
+                            period: plan.name === 'Free' ? '7 days' : '30 days',
+                            features,
                             recommended: plan.name === 'Gallop'
                         };
                     });
                     setPlans(formattedPlans);
                 } else {
-                    // If no plans from API, use default plans
-                    console.log('Using default plans');
                     setPlans(defaultPlans);
                 }
             } catch (error) {
                 console.error('Failed to fetch plans:', error);
                 setError('Failed to load subscription plans. Please try again.');
-                // Use default plans as fallback
                 setPlans(defaultPlans);
             } finally {
                 setLoading(false);
@@ -287,15 +279,39 @@ const SellerSubscriptionPlans = () => {
             setLoading(true);
             setError(null);
 
-            // Create subscription order
-            console.log('Creating subscription order for:', plan.name);
+            // For Free plan, directly create subscription without payment
+            if (plan.name === 'Free') {
+                const response = await api.sellers.subscribe({
+                    package: plan.name,
+                    duration: 7,
+                    amount: 0,
+                    paymentMethod: 'free'
+                });
+
+                if (!response?.data?.success) {
+                    throw new Error('Failed to activate free plan');
+                }
+
+                // Force auth refresh to update user state with new subscription
+                await checkAuth(true);
+
+                // Navigate to dashboard on success
+                navigate('/seller/dashboard', {
+                    state: {
+                        subscriptionSuccess: true,
+                        plan: plan,
+                        subscription: response.data.subscription
+                    }
+                });
+                return;
+            }
+
+            // For paid plans, create subscription order
             const orderResponse = await api.sellers.createSubscriptionOrder({
                 package: plan.name,
                 duration: 30,
                 amount: plan.price
             });
-
-            console.log('Order Response:', orderResponse);
 
             if (!orderResponse?.data?.success || !orderResponse?.data?.order?.id) {
                 throw new Error('Failed to create subscription order');
@@ -516,7 +532,7 @@ const SellerSubscriptionPlans = () => {
 
             {/* Plans Grid */}
             <div className="max-w-7xl mx-auto px-4 py-16">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                     {plans.map((plan) => (
                         <div
                             key={plan.id}
@@ -539,11 +555,10 @@ const SellerSubscriptionPlans = () => {
                                     <span className="text-tertiary/70">/{plan.period}</span>
                                 </div>
                                 <p className="mt-2 text-sm text-tertiary/70">
-                                    {plan.name === 'Royal Stallion'
-                                        ? 'Perfect for professional sellers'
-                                        : plan.name === 'Gallop'
-                                            ? 'Great for growing businesses'
-                                            : 'Best for getting started'}
+                                    {plan.name === 'Royal Stallion' ? 'Perfect for professional sellers' :
+                                     plan.name === 'Gallop' ? 'Great for growing businesses' :
+                                     plan.name === 'Trot' ? 'Best for getting started' :
+                                     'Try before you subscribe'}
                                 </p>
                             </div>
 
