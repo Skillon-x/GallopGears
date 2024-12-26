@@ -1,8 +1,10 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Search, Heart, ChevronDown, Loader } from 'lucide-react';
 import { useDebounce } from '../../hooks/useDebounce';
 import VirtualGrid from '../../components/common/VirtualGrid';
+import { useAuth } from '../../context/AuthContext';
+import { api } from '../../services/api';
 
 // Price range options with proper type checking
 const PRICE_RANGES = [
@@ -56,24 +58,58 @@ const HorseCard = React.memo(({ horse, isFavorite, onToggleFavorite }) => (
 ));
 
 const FeaturedHorsesHome = ({ horses = [], breeds = [] }) => {
+    const navigate = useNavigate();
+    const { isAuthenticated } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedBreed, setSelectedBreed] = useState('');
     const [selectedPrice, setSelectedPrice] = useState('all');
     const [favorites, setFavorites] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    // Fetch user's favorites on mount
+    useEffect(() => {
+        const fetchFavorites = async () => {
+            if (!isAuthenticated) {
+                setLoading(false);
+                return;
+            }
+            try {
+                const response = await api.users.getFavorites();
+                if (response?.data?.success) {
+                    const favoriteIds = response.data.favorites.map(horse => horse._id);
+                    setFavorites(favoriteIds);
+                }
+            } catch (error) {
+                console.error('Error fetching favorites:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchFavorites();
+    }, [isAuthenticated]);
 
     const debouncedSearch = useDebounce(searchTerm, 300);
 
     const toggleFavorite = useCallback(async (horseId) => {
+        if (!isAuthenticated) {
+            navigate('/login', { state: { from: window.location.pathname } });
+            return;
+        }
+
         try {
-            setFavorites(prev => 
-                prev.includes(horseId) 
-                    ? prev.filter(id => id !== horseId)
-                    : [...prev, horseId]
-            );
+            const response = await api.horses.toggleFavorite(horseId);
+            if (response?.data?.success) {
+                setFavorites(prev => 
+                    prev.includes(horseId) 
+                        ? prev.filter(id => id !== horseId)
+                        : [...prev, horseId]
+                );
+            }
         } catch (error) {
             console.error('Error toggling favorite:', error);
         }
-    }, []);
+    }, [isAuthenticated, navigate]);
 
     const filteredHorses = useMemo(() => {
         return horses.filter(horse => {
@@ -172,14 +208,19 @@ const FeaturedHorsesHome = ({ horses = [], breeds = [] }) => {
                     </select>
                 </div>
 
-                {/* Virtual Grid of Horses */}
-                <VirtualGrid
-                    itemCount={filteredHorses.length}
-                    itemHeight={400}
-                    columnCount={3}
-                    gap={24}
-                    renderItem={renderHorseCard}
-                />
+                {loading ? (
+                    <div className="flex justify-center items-center py-12">
+                        <Loader className="w-8 h-8 animate-spin text-primary" />
+                    </div>
+                ) : (
+                    <VirtualGrid
+                        itemCount={filteredHorses.length}
+                        itemHeight={400}
+                        columnCount={3}
+                        gap={24}
+                        renderItem={renderHorseCard}
+                    />
+                )}
             </div>
         </section>
     );

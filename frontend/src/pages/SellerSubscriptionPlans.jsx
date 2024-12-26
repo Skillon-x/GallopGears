@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
+import {
     CheckCircle,
     Shield,
     Clock,
@@ -157,10 +157,10 @@ const SellerSubscriptionPlans = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [plans, setPlans] = useState(defaultPlans);
-    const { 
-        fromRegistration = false, 
-        userData = null 
-      } = location.state || {};
+    const {
+        fromRegistration = false,
+        userData = null
+    } = location.state || {};
 
     useEffect(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -173,64 +173,64 @@ const SellerSubscriptionPlans = () => {
                     const formattedPlans = response.data.plans.map(plan => {
                         const features = [];
                         const planFeatures = SUBSCRIPTION_FEATURES[plan.name];
-                        
+
                         if (planFeatures) {
                             // Add listing features
                             features.push(`Up to ${planFeatures.maxListings === 9999 ? 'unlimited' : planFeatures.maxListings} horse listings`);
                             features.push(`Up to ${planFeatures.maxPhotos} photos per listing`);
                             features.push(`${planFeatures.listingDuration}-day listing duration`);
-                            
+
                             // Add verification and placement features
                             features.push(`${planFeatures.verificationLevel.charAt(0).toUpperCase() + planFeatures.verificationLevel.slice(1)} verification level`);
                             features.push(`${planFeatures.searchPlacement.charAt(0).toUpperCase() + planFeatures.searchPlacement.slice(1)} search placement`);
-                            
+
                             // Add badges
                             if (planFeatures.badges && planFeatures.badges.length > 0) {
                                 features.push(planFeatures.badges.join(' & '));
                             }
-                            
+
                             // Add analytics
                             if (planFeatures.analytics) {
                                 features.push(plan.name === 'Royal Stallion' ? 'Advanced analytics dashboard' : 'Analytics dashboard');
                             }
-                            
+
                             // Add homepage spotlight
                             if (planFeatures.homepageSpotlight > 0) {
                                 features.push(`Homepage spotlight (${planFeatures.homepageSpotlight} slots)`);
                             }
-                            
+
                             // Add virtual stable tour
                             if (planFeatures.virtualStableTour) {
                                 features.push('Virtual stable tour');
                             }
-                            
+
                             // Add featured listing boosts
                             if (planFeatures.featuredListingBoosts.count > 0) {
                                 features.push('Featured listing boosts');
                             }
-                            
+
                             // Add social media
                             if (planFeatures.socialMediaSharing) {
                                 features.push('Social media promotion');
                             }
-                            
+
                             // Add serious buyer access
                             if (planFeatures.seriousBuyerAccess) {
                                 features.push('Serious buyer access');
                             }
-                            
+
                             // Add support level
-                            features.push(plan.name === 'Royal Stallion' ? 'Premium support' : 
-                                        plan.name === 'Gallop' ? 'Priority support' : 
-                                        'Standard support');
+                            features.push(plan.name === 'Royal Stallion' ? 'Premium support' :
+                                plan.name === 'Gallop' ? 'Priority support' :
+                                    'Standard support');
                         }
 
                         return {
                             id: plan.name.toLowerCase().replace(' ', '-'),
                             name: plan.name,
                             price: plan.name === 'Royal Stallion' ? 9999 :
-                                   plan.name === 'Gallop' ? 4999 :
-                                   plan.name === 'Trot' ? 1999 : 0,
+                                plan.name === 'Gallop' ? 4999 :
+                                    plan.name === 'Trot' ? 1999 : 0,
                             period: '30 days',
                             features: features,
                             recommended: plan.name === 'Gallop'
@@ -324,7 +324,7 @@ const SellerSubscriptionPlans = () => {
                 handler: async function (response) {
                     try {
                         console.log('Payment successful, verifying...');
-                        
+
                         // Verify payment
                         const verifyResponse = await api.sellers.verifySubscriptionPayment({
                             razorpay_payment_id: response.razorpay_payment_id,
@@ -365,7 +365,7 @@ const SellerSubscriptionPlans = () => {
                     }
                 },
                 modal: {
-                    ondismiss: function() {
+                    ondismiss: function () {
                         setLoading(false);
                     }
                 }
@@ -431,8 +431,8 @@ const SellerSubscriptionPlans = () => {
     const handlePlanAction = (plan) => {
         if (!isAuthenticated) {
             // If not authenticated, redirect to seller registration
-            navigate('/register/seller', { 
-                state: { 
+            navigate('/register/seller', {
+                state: {
                     selectedPlan: plan.name,
                     returnUrl: '/pricing'
                 }
@@ -520,18 +520,17 @@ const SellerSubscriptionPlans = () => {
                     {plans.map((plan) => (
                         <div
                             key={plan.id}
-                            className={`relative backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl overflow-hidden border transition-all duration-300 hover:scale-105 ${
-                                plan.recommended 
-                                    ? 'border-primary shadow-primary/20' 
+                            className={`relative backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl overflow-hidden border transition-all duration-300 hover:scale-105 ${plan.recommended
+                                    ? 'border-primary shadow-primary/20'
                                     : 'border-white'
-                            }`}
+                                }`}
                         >
                             {plan.recommended && (
                                 <div className="absolute top-0 right-0 bg-primary text-white px-4 py-1 rounded-bl-lg text-sm font-medium">
                                     Recommended
                                 </div>
                             )}
-                            
+
                             {/* Plan Header */}
                             <div className="p-6 md:p-8 bg-gradient-to-br from-primary/5 to-transparent">
                                 <h3 className="text-xl font-bold text-tertiary mb-4">{plan.name}</h3>
@@ -540,11 +539,11 @@ const SellerSubscriptionPlans = () => {
                                     <span className="text-tertiary/70">/{plan.period}</span>
                                 </div>
                                 <p className="mt-2 text-sm text-tertiary/70">
-                                    {plan.name === 'Royal Stallion' 
+                                    {plan.name === 'Royal Stallion'
                                         ? 'Perfect for professional sellers'
                                         : plan.name === 'Gallop'
-                                        ? 'Great for growing businesses'
-                                        : 'Best for getting started'}
+                                            ? 'Great for growing businesses'
+                                            : 'Best for getting started'}
                                 </p>
                             </div>
 
@@ -566,8 +565,8 @@ const SellerSubscriptionPlans = () => {
                                     onClick={() => handlePlanAction(plan)}
                                     disabled={loading}
                                     className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-base font-medium transition-all duration-200
-                                        ${plan.recommended 
-                                            ? 'bg-primary text-white hover:bg-accent' 
+                                        ${plan.recommended
+                                            ? 'bg-primary text-white hover:bg-accent'
                                             : 'bg-white text-primary border-2 border-primary hover:bg-primary/5'
                                         }
                                         ${loading ? 'opacity-50 cursor-not-allowed' : ''}

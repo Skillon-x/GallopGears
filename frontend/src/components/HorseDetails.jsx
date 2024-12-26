@@ -25,7 +25,6 @@ import {
   Activity,
   Stethoscope,
   Star,
-
 } from 'lucide-react';
 import MainNavigation from '../pages/Browse/MainNavigation';
 import { useAuth } from '../context/AuthContext';
@@ -108,27 +107,37 @@ const HorseDetails = () => {
   const [horse, setHorse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [favorites, setFavorites] = useState([]);
 
   useEffect(() => {
-    fetchHorseDetails();
-  }, [id]);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [horseResponse, favoritesResponse] = await Promise.all([
+          api.horses.getDetails(id),
+          isAuthenticated ? api.users.getFavorites() : Promise.resolve({ data: { favorites: [] } })
+        ]);
 
-  const fetchHorseDetails = async () => {
-    try {
-      setLoading(true);
-      const response = await api.horses.getDetails(id);
-      if (response?.data?.success) {
-        setHorse(response.data.horse);
-      } else {
-        throw new Error('Failed to fetch horse details');
+        if (horseResponse?.data?.success) {
+          const favoriteIds = favoritesResponse?.data?.favorites?.map(fav => fav._id) || [];
+          setHorse({
+            ...horseResponse.data.horse,
+            isFavorited: favoriteIds.includes(id)
+          });
+          setFavorites(favoriteIds);
+        } else {
+          throw new Error('Failed to fetch horse details');
+        }
+      } catch (err) {
+        setError('Failed to load horse details. Please try again.');
+        console.error('Error fetching horse details:', err);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError('Failed to load horse details. Please try again.');
-      console.error('Error fetching horse details:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    fetchData();
+  }, [id, isAuthenticated]);
 
   const handleEnquire = () => {
     if (!isAuthenticated) {
@@ -145,11 +154,20 @@ const HorseDetails = () => {
     }
 
     try {
-      await api.horses.toggleFavorite(id);
-      setHorse(prev => ({
-        ...prev,
-        isFavorited: !prev.isFavorited
-      }));
+      const response = await api.horses.toggleFavorite(id);
+      if (response?.data?.success) {
+        setHorse(prev => ({
+          ...prev,
+          isFavorited: !prev.isFavorited
+        }));
+        
+        // Update favorites list
+        setFavorites(prev => 
+          prev.includes(id) 
+            ? prev.filter(fId => fId !== id)
+            : [...prev, id]
+        );
+      }
     } catch (err) {
       console.error('Error toggling favorite:', err);
     }
@@ -205,7 +223,7 @@ const HorseDetails = () => {
         <div className="max-w-7xl mx-auto space-y-8">
           {/* Status Badges */}
           <div className="flex items-center space-x-4">
-            {horse.featured?.active && (
+            {horse?.featured?.active && (
               <Badge active={true}>
                 <Award className="w-4 h-4 mr-1" />
                 Featured
@@ -229,30 +247,30 @@ const HorseDetails = () => {
           </div>
 
           {/* Image Gallery */}
-          <ImageGallery images={horse.images} />
+          <ImageGallery images={horse?.images || []} />
 
           {/* Title Section */}
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-tertiary">{horse.name}</h1>
+              <h1 className="text-3xl font-bold text-tertiary">{horse?.name}</h1>
               <p className="text-lg text-primary font-semibold mt-2">
-                ₹{horse.price?.toLocaleString()}
+                ₹{horse?.price?.toLocaleString()}
               </p>
               <p className="text-tertiary/70 flex items-center mt-2">
                 <MapPin className="w-4 h-4 mr-1" />
-                {horse.location?.city}, {horse.location?.state}
+                {horse?.location?.city}, {horse?.location?.state}
               </p>
             </div>
             <div className="flex space-x-3">
               <button
                 onClick={handleFavorite}
                 className={`p-3 rounded-lg border transition-colors ${
-                  horse.isFavorited
+                  horse?.isFavorited
                     ? 'bg-primary/10 border-primary text-primary'
                     : 'border-gray-200 text-tertiary hover:border-primary hover:text-primary'
                 }`}
               >
-                <Heart className={`w-5 h-5 ${horse.isFavorited ? 'fill-current' : ''}`} />
+                <Heart className={`w-5 h-5 ${horse?.isFavorited ? 'fill-current' : ''}`} />
               </button>
               <button
                 onClick={handleEnquire}

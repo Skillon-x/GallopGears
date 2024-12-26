@@ -12,6 +12,7 @@ import AddListing from './pages/SellerDashboard/AddListing';
 import Listings from './pages/SellerDashboard/Listings';
 import SellerInquiries from './pages/SellerDashboard/Inquiries';
 import UserInquiries from './pages/UserDashboard/Inquiries';
+import Favorites from './pages/UserDashboard/Favorites';
 import Reviews from './pages/SellerDashboard/Reviews';
 import Payments from './pages/SellerDashboard/Payments';
 import Settings from './pages/SellerDashboard/Settings';
@@ -57,7 +58,7 @@ const App = () => {
             {/* User Routes */}
             <Route path="/inquiries" element={<Layout><UserInquiries /></Layout>} />
             <Route path="/inquire/:id" element={<Layout><Enquire /></Layout>} />
-            
+            <Route path="/favorites" element={<Layout><Favorites /></Layout>} />
             {/* Seller Dashboard Routes */}
             <Route path="/seller/dashboard" element={<Layout><Dashboard /></Layout>} />
             

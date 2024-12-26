@@ -1,90 +1,104 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../../services/api';
-import { MessageSquare, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
+import { 
+  MessageSquare, 
+  AlertCircle, 
+  Clock, 
+  ChevronRight,
+  User,
+  Calendar,
+  CheckCircle,
+  XCircle,
+  ExternalLink
+} from 'lucide-react';
 
 const InquiryCard = ({ inquiry }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-yellow-500/90';
+      case 'accepted':
+        return 'bg-green-500/90';
+      case 'rejected':
+        return 'bg-red-500/90';
+      default:
+        return 'bg-gray-500/90';
+    }
+  };
 
-  if (!inquiry) {
-    return null;
-  }
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'pending':
+        return <Clock className="w-3 h-3 mr-1.5" />;
+      case 'accepted':
+        return <CheckCircle className="w-3 h-3 mr-1.5" />;
+      case 'rejected':
+        return <XCircle className="w-3 h-3 mr-1.5" />;
+      default:
+        return null;
+    }
+  };
 
-  const horseName = inquiry?.horse?.name || 'Horse details unavailable';
-  const sellerName = inquiry?.seller?.businessName || inquiry?.seller?.name || 'Seller details unavailable';
-  const status = inquiry?.status || 'pending';
-  const message = inquiry?.message || 'No message provided';
-  const reply = inquiry?.reply;
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      <div className="p-4">
-        <div className="flex justify-between items-start">
+    <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-white hover:border-primary/20 overflow-hidden transition-all duration-300 hover:shadow-lg">
+      <div className="p-6">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-4">
           <div>
-            <h3 className="text-lg font-semibold text-tertiary">{horseName}</h3>
-            <p className="text-tertiary/70 text-sm mt-1">To: {sellerName}</p>
+            <h3 className="font-semibold text-tertiary text-lg">
+              {inquiry.horse?.name || 'Horse Name Not Available'}
+            </h3>
+            <p className="text-primary font-bold mt-1">
+              ₹{inquiry.horse?.price?.toLocaleString() || 'Price Not Available'}
+            </p>
           </div>
-          <span className={`text-sm px-2 py-1 rounded-full ${
-            status === 'pending' ? 'bg-orange-100 text-orange-600' :
-            status === 'replied' ? 'bg-green-100 text-green-600' :
-            'bg-gray-100 text-gray-600'
-          }`}>
-            {status.charAt(0).toUpperCase() + status.slice(1)}
+          <span className={`px-3 py-1.5 rounded-full text-xs font-medium text-white backdrop-blur-sm flex items-center shadow-lg ${getStatusColor(inquiry.status)}`}>
+            {getStatusIcon(inquiry.status)}
+            {inquiry.status.charAt(0).toUpperCase() + inquiry.status.slice(1)}
           </span>
         </div>
-        
-        <div className="mt-4">
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center text-tertiary/70 hover:text-tertiary"
-          >
-            <MessageSquare className="w-4 h-4 mr-2" />
-            <span>Message & Reply</span>
-            {isExpanded ? (
-              <ChevronUp className="w-4 h-4 ml-2" />
-            ) : (
-              <ChevronDown className="w-4 h-4 ml-2" />
-            )}
-          </button>
-          
-          {isExpanded && (
-            <div className="mt-2 p-3 bg-gray-50 rounded-lg">
-              <div>
-                <p className="text-sm font-medium text-tertiary">Your Message:</p>
-                <p className="text-tertiary mt-1">{message}</p>
-              </div>
-              {reply && (
-                <div className="mt-3 pt-3 border-t border-gray-200">
-                  <p className="text-sm font-medium text-tertiary">Seller's Reply:</p>
-                  <p className="text-tertiary mt-1">{reply}</p>
-                </div>
-              )}
-            </div>
-          )}
+
+        {/* Details */}
+        <div className="space-y-3">
+          <div className="flex items-center text-sm text-tertiary/70">
+            <User className="w-4 h-4 mr-2" />
+            <span>Seller: {inquiry.seller?.businessName || 'Not Available'}</span>
+          </div>
+          <div className="flex items-center text-sm text-tertiary/70">
+            <Calendar className="w-4 h-4 mr-2" />
+            <span>Inquired on: {formatDate(inquiry.createdAt)}</span>
+          </div>
+          <div className="mt-4">
+            <p className="text-sm text-tertiary/70 line-clamp-2">
+              {inquiry.message}
+            </p>
+          </div>
         </div>
 
-        {/* Additional horse details when expanded */}
-        {isExpanded && inquiry?.horse && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm font-medium text-tertiary">Price</p>
-                <p className="text-tertiary">₹{inquiry.horse.price?.toLocaleString() || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-tertiary">Location</p>
-                <p className="text-tertiary">{inquiry.horse.location?.city || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-tertiary">Breed</p>
-                <p className="text-tertiary">{inquiry.horse.breed || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-tertiary">Age</p>
-                <p className="text-tertiary">{inquiry.horse.age?.years || 'N/A'} years</p>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Actions */}
+        <div className="mt-6 flex items-center justify-between">
+          <Link
+            to={`/horses/${inquiry.horse?._id}`}
+            className="text-sm text-primary hover:text-accent flex items-center transition-colors"
+          >
+            View Horse <ExternalLink className="w-4 h-4 ml-1" />
+          </Link>
+          <Link
+            to={`/inquiries/${inquiry._id}`}
+            className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
+          >
+            View Details <ChevronRight className="w-4 h-4 ml-1" />
+          </Link>
+        </div>
       </div>
     </div>
   );
@@ -94,89 +108,102 @@ const Inquiries = () => {
   const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState('all');
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     fetchInquiries();
   }, []);
 
   const fetchInquiries = async () => {
     try {
-      const response = await api.inquiries.getMine();
+      setLoading(true);
+      const response = await api.users.getInquiries();
       if (response?.data?.success) {
-        setInquiries(response.data.inquiries || []);
-      } else {
-        throw new Error('Failed to fetch inquiries');
+        setInquiries(response.data.inquiries);
       }
-      setLoading(false);
     } catch (err) {
-      setError(err.message);
+      setError('Failed to load inquiries. Please try again.');
+      console.error('Error fetching inquiries:', err);
+    } finally {
       setLoading(false);
     }
   };
 
-  const filteredInquiries = inquiries.filter(inquiry => {
-    if (filter === 'all') return true;
-    return inquiry.status === filter;
-  });
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-accent/30 via-white to-primary/30 py-20 md:py-24 px-4 md:px-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-2xl overflow-hidden border border-white">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-primary via-accent to-primary p-8 md:p-10 text-white">
+            <div className="text-center">
+              <h2 className="text-2xl md:text-3xl font-bold flex items-center justify-center gap-3">
+                <MessageSquare className="w-8 h-8" />
+                Your Inquiries
+              </h2>
+              <p className="text-white/90 mt-2">
+                Track and manage your horse inquiries
+              </p>
+            </div>
+          </div>
 
-  const content = loading ? (
-    <div className="space-y-4">
-      {[...Array(3)].map((_, i) => (
-        <div key={i} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 animate-pulse">
-          <div className="space-y-3">
-            <div className="h-6 bg-gray-200 rounded w-3/4" />
-            <div className="h-4 bg-gray-200 rounded w-1/2" />
-            <div className="h-20 bg-gray-200 rounded" />
+          <div className="p-8 md:p-10">
+            {/* Error Message */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-50/80 backdrop-blur-sm border border-red-200 rounded-xl flex items-start space-x-2">
+                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+
+            {/* Loading State */}
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-white p-6">
+                      <div className="h-6 bg-gray-200 rounded-full w-2/3 mb-4" />
+                      <div className="space-y-3">
+                        <div className="h-4 bg-gray-200 rounded-full w-1/2" />
+                        <div className="h-4 bg-gray-200 rounded-full w-3/4" />
+                        <div className="h-20 bg-gray-200 rounded-lg w-full" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : inquiries.length === 0 ? (
+              <div className="text-center py-12">
+                <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No inquiries yet</h3>
+                <p className="text-gray-500 mb-6">Start browsing horses and make inquiries to see them here</p>
+                <Link
+                  to="/browse"
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-accent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
+                >
+                  Browse Horses
+                </Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {inquiries.map(inquiry => (
+                  <InquiryCard key={inquiry._id} inquiry={inquiry} />
+                ))}
+              </div>
+            )}
           </div>
         </div>
-      ))}
-    </div>
-  ) : error ? (
-    <div className="bg-red-50 text-red-600 p-4 rounded-lg flex items-start space-x-2">
-      <AlertCircle className="h-5 w-5 mt-0.5" />
-      <span>{error}</span>
-    </div>
-  ) : (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-tertiary">My Inquiries</h1>
-        <div className="flex gap-2">
-          <select 
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="all">All Inquiries</option>
-            <option value="pending">Pending</option>
-            <option value="replied">Replied</option>
-          </select>
-        </div>
-      </div>
 
-      {filteredInquiries.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-          <h3 className="text-lg font-semibold text-tertiary">No Inquiries Yet</h3>
-          <p className="text-tertiary/70 mt-2">
-            {filter === 'all' 
-              ? "You haven't made any inquiries yet. Browse horses and reach out to sellers!"
-              : `No ${filter} inquiries found.`}
-          </p>
+        {/* Help Text */}
+        <div className="mt-12 text-center">
+          <div className="backdrop-blur-sm bg-white/80 rounded-xl py-5 px-8 inline-block shadow-lg border border-white/50">
+            <p className="text-gray-700">
+              Need help? Contact our support team at{' '}
+              <a href="mailto:support@gallopinggears.com" className="text-primary hover:text-accent transition-colors font-medium">
+                support@gallopinggears.com
+              </a>
+            </p>
+          </div>
         </div>
-      ) : (
-        <div className="space-y-4">
-          {filteredInquiries.map(inquiry => (
-            <InquiryCard key={inquiry._id} inquiry={inquiry} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
-        {content}
       </div>
     </div>
   );

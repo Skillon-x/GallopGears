@@ -489,7 +489,15 @@ export const api = {
             } catch (error) {
                 handleError(error);
             }
-        }
+        },
+        toggleFavorite: async (id) => {
+            try {
+                const response = await apiClient.post(`/horses/${id}/favorite`);
+                return handleResponse(response);
+            } catch (error) {
+                handleError(error);
+            }
+        },
     },
     // User services
     users: {
@@ -531,6 +539,28 @@ export const api = {
                 return handleResponse(response);
             } catch (error) {
                 handleError(error);
+            }
+        },
+        getInquiries: async () => {
+            try {
+                const response = await apiClient.get(endpoints.inquiries.list);
+                const result = handleResponse(response);
+                
+                // Ensure consistent response format
+                if (result.data?.success) {
+                    return result;
+                } else if (result.success) {
+                    return {
+                        data: {
+                            success: true,
+                            inquiries: result.inquiries
+                        }
+                    };
+                }
+                throw new Error('Invalid response format');
+            } catch (error) {
+                console.error('Failed to fetch inquiries:', error);
+                throw error;
             }
         },
     },

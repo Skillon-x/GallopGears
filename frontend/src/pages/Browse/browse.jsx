@@ -5,6 +5,7 @@ import HorseGrid from './HorseGrid';
 import FilterSidebar from './FilterSidebar';
 import { api } from '../../services/api';
 import { Search, ChevronRight, Filter } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 // Default filter values
 const DEFAULT_FILTERS = {
@@ -28,11 +29,13 @@ const DEFAULT_FILTERS = {
 const Browse = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [allHorses, setAllHorses] = useState([]); // Store all horses
   const [filteredHorses, setFilteredHorses] = useState([]); // Store filtered horses
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [favorites, setFavorites] = useState([]);
   const [stats, setStats] = useState({
     totalHorses: 0,
     totalSellers: 0,
@@ -92,6 +95,24 @@ const Browse = () => {
     };
     fetchStats();
   }, []);
+
+  // Fetch initial favorites
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      if (!isAuthenticated) return;
+      try {
+        const response = await api.users.getFavorites();
+        if (response?.data?.success) {
+          const favoriteIds = response.data.favorites.map(horse => horse._id);
+          setFavorites(favoriteIds);
+        }
+      } catch (err) {
+        console.error('Error fetching favorites:', err);
+      }
+    };
+
+    fetchFavorites();
+  }, [isAuthenticated]);
 
   // Apply all filters including search
   const applyFilters = useCallback((horses, currentFilters) => {
@@ -195,8 +216,13 @@ const Browse = () => {
 
         const response = await api.horses.search();
         if (response?.data?.success) {
-          setAllHorses(response.data.horses);
-          const filtered = applyFilters(response.data.horses, filters);
+          // Mark favorited horses
+          const horsesWithFavorites = response.data.horses.map(horse => ({
+            ...horse,
+            isFavorited: favorites.includes(horse._id)
+          }));
+          setAllHorses(horsesWithFavorites);
+          const filtered = applyFilters(horsesWithFavorites, filters);
           const sorted = sortHorses(filtered, filters.sort);
           setFilteredHorses(sorted);
         } else {
@@ -211,7 +237,7 @@ const Browse = () => {
     };
 
     fetchHorses();
-  }, []); // Only fetch once on mount
+  }, [favorites]); // Add favorites as dependency
 
   // Apply filters when they change
   useEffect(() => {
@@ -221,19 +247,36 @@ const Browse = () => {
   }, [filters, allHorses, applyFilters, sortHorses]);
 
   const handleFavorite = useCallback(async (id) => {
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: '/browse' } });
+      return;
+    }
+
     try {
-      await api.horses.toggleFavorite(id);
-      setAllHorses(prevAllHorses => 
-        prevAllHorses.map(horse => 
-          horse._id === id 
-            ? { ...horse, isFavorited: !horse.isFavorited }
-            : horse
-        )
-      );
+      const response = await api.horses.toggleFavorite(id);
+      if (response?.data?.success) {
+        // Update favorites list
+        setFavorites(prev => 
+          prev.includes(id) 
+            ? prev.filter(fId => fId !== id)
+            : [...prev, id]
+        );
+
+        // Update horse in both allHorses and filteredHorses
+        const updateHorses = horses => 
+          horses.map(horse => 
+            horse._id === id 
+              ? { ...horse, isFavorited: !horse.isFavorited }
+              : horse
+          );
+
+        setAllHorses(updateHorses);
+        setFilteredHorses(updateHorses);
+      }
     } catch (err) {
       console.error('Error toggling favorite:', err);
     }
-  }, []);
+  }, [isAuthenticated, navigate]);
 
   const handleApplyFilters = useCallback((newFilters) => {
     window.scrollTo(0, 0);
