@@ -182,10 +182,29 @@ const horseSchema = new mongoose.Schema({
 });
 
 // Update statistics when horse is viewed
-horseSchema.methods.incrementViews = async function() {
-    this.statistics.views += 1;
-    this.statistics.lastViewed = Date.now();
-    await this.save();
+horseSchema.methods.incrementViews = async function(userId) {
+    // Only increment if userId is provided (authenticated user)
+    if (userId) {
+        const HorseView = mongoose.model('HorseView');
+        
+        // Check if user has already viewed today
+        const hasViewed = await HorseView.hasViewedToday(this._id, userId);
+        
+        if (!hasViewed) {
+            // Create new view record
+            await HorseView.create({
+                horse: this._id,
+                user: userId,
+                viewDate: new Date()
+            });
+            
+            // Increment view count
+            this.statistics.views += 1;
+            this.statistics.lastViewed = Date.now();
+            await this.save();
+        }
+    }
+    return this;
 };
 
 // Update statistics when inquiry is created

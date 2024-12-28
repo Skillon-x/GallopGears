@@ -23,8 +23,21 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['user', 'seller', 'admin'],
+        enum: ['user', 'seller', 'admin', 'pending_seller'],
         default: 'user'
+    },
+    registrationStep: {
+        type: Number,
+        min: 0,
+        max: 3,
+        default: 0
+    },
+    isSellerRegistration: {
+        type: Boolean,
+        default: false
+    },
+    registrationTimestamp: {
+        type: Date
     },
     phone: {
         type: String,

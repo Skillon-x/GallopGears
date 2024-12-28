@@ -9,10 +9,12 @@ const Seller = require('../models/Seller');
 // @access  Public
 router.get('/', async (req, res) => {
     try {
-        // Get featured horses
-        const featuredHorses = await Horse.find({ listingStatus: 'active' })
+        // Get featured horses (removed limit)
+        const featuredHorses = await Horse.find({ 
+            listingStatus: 'active',
+            'featured.active': true
+        })
             .sort('-statistics.views')
-            .limit(6)
             .populate('seller', 'businessName');
 
         // Get recently added horses

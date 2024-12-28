@@ -1,6 +1,5 @@
 const Horse = require('../models/Horse');
 const User = require('../models/User');
-const Review = require('../models/Review');
 const ActivityLog = require('../models/ActivityLog');
 
 // Helper function to calculate similarity score
@@ -159,18 +158,6 @@ exports.getBreedRecommendations = async (req, res) => {
         // Get user's favorite breeds from preferences and history
         const favoriteBreeds = new Set(user.preferences?.breeds || []);
         
-        // Add breeds from highly rated reviews
-        const userReviews = await Review.find({
-            reviewer: user._id,
-            'rating.overall': { $gte: 4 }
-        }).populate('entityId');
-        
-        userReviews.forEach(review => {
-            if (review.entityType === 'horse' && review.entityId.breed) {
-                favoriteBreeds.add(review.entityId.breed);
-            }
-        });
-
         // Get popular horses of favorite breeds
         const recommendations = await Horse.aggregate([
             {
@@ -180,20 +167,7 @@ exports.getBreedRecommendations = async (req, res) => {
                 }
             },
             {
-                $lookup: {
-                    from: 'reviews',
-                    localField: '_id',
-                    foreignField: 'entityId',
-                    as: 'reviews'
-                }
-            },
-            {
-                $addFields: {
-                    averageRating: { $avg: '$reviews.rating.overall' }
-                }
-            },
-            {
-                $sort: { averageRating: -1 }
+                $sort: { createdAt: -1 }
             },
             {
                 $limit: limit
@@ -202,7 +176,7 @@ exports.getBreedRecommendations = async (req, res) => {
 
         await Horse.populate(recommendations, {
             path: 'seller',
-            select: 'businessName location rating'
+            select: 'businessName location'
         });
 
         res.json({

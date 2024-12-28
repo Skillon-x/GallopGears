@@ -57,6 +57,8 @@ const HorseCard = React.memo(({ horse, isFavorite, onToggleFavorite }) => (
     </Link>
 ));
 
+const ITEMS_PER_PAGE = 12;
+
 const FeaturedHorsesHome = ({ horses = [], breeds = [] }) => {
     const navigate = useNavigate();
     const { isAuthenticated } = useAuth();
@@ -65,6 +67,7 @@ const FeaturedHorsesHome = ({ horses = [], breeds = [] }) => {
     const [selectedPrice, setSelectedPrice] = useState('all');
     const [favorites, setFavorites] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
 
     // Fetch user's favorites on mount
     useEffect(() => {
@@ -113,7 +116,6 @@ const FeaturedHorsesHome = ({ horses = [], breeds = [] }) => {
 
     const filteredHorses = useMemo(() => {
         return horses.filter(horse => {
-            // Safely handle undefined values in search
             const horseName = (horse.name || '').toLowerCase();
             const horseBreed = (horse.breed || '').toLowerCase();
             const searchQuery = debouncedSearch.toLowerCase();
@@ -124,7 +126,6 @@ const FeaturedHorsesHome = ({ horses = [], breeds = [] }) => {
             const matchesBreed = !selectedBreed || selectedBreed === 'All Breeds' ||
                 horse.breed === selectedBreed;
             
-            // Get the selected price range and safely handle price comparison
             const selectedPriceRange = PRICE_RANGES.find(range => range.value === selectedPrice) || PRICE_RANGES[0];
             const horsePrice = horse.price || 0;
             const matchesPrice = selectedPrice === 'all' || (
@@ -136,15 +137,27 @@ const FeaturedHorsesHome = ({ horses = [], breeds = [] }) => {
         });
     }, [horses, debouncedSearch, selectedBreed, selectedPrice]);
 
+    // Calculate pagination
+    const totalPages = Math.ceil(filteredHorses.length / ITEMS_PER_PAGE);
+    const paginatedHorses = useMemo(() => {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        return filteredHorses.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    }, [filteredHorses, currentPage]);
+
+    // Reset to first page when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, selectedBreed, selectedPrice]);
+
     const renderHorseCard = useCallback(({ index, style }) => (
-        <div key={filteredHorses[index]._id} style={style}>
+        <div key={paginatedHorses[index]._id} style={style}>
             <HorseCard 
-                horse={filteredHorses[index]}
-                isFavorite={favorites.includes(filteredHorses[index]._id)}
+                horse={paginatedHorses[index]}
+                isFavorite={favorites.includes(paginatedHorses[index]._id)}
                 onToggleFavorite={toggleFavorite}
             />
         </div>
-    ), [filteredHorses, favorites, toggleFavorite]);
+    ), [paginatedHorses, favorites, toggleFavorite]);
 
     // Prepare breeds for select dropdown
     const availableBreeds = useMemo(() => {
@@ -213,13 +226,50 @@ const FeaturedHorsesHome = ({ horses = [], breeds = [] }) => {
                         <Loader className="w-8 h-8 animate-spin text-primary" />
                     </div>
                 ) : (
-                    <VirtualGrid
-                        itemCount={filteredHorses.length}
-                        itemHeight={400}
-                        columnCount={3}
-                        gap={24}
-                        renderItem={renderHorseCard}
-                    />
+                    <>
+                        <VirtualGrid
+                            itemCount={paginatedHorses.length}
+                            itemHeight={400}
+                            columnCount={3}
+                            gap={24}
+                            renderItem={renderHorseCard}
+                        />
+
+                        {/* Pagination Controls */}
+                        {totalPages > 1 && (
+                            <div className="mt-8 flex justify-center gap-2">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-4 py-2 border border-primary rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary hover:text-white transition-colors"
+                                >
+                                    Previous
+                                </button>
+                                <div className="flex items-center gap-2">
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                        <button
+                                            key={page}
+                                            onClick={() => setCurrentPage(page)}
+                                            className={`w-10 h-10 rounded-md ${
+                                                currentPage === page
+                                                    ? 'bg-primary text-white'
+                                                    : 'border border-primary hover:bg-primary hover:text-white'
+                                            } transition-colors`}
+                                        >
+                                            {page}
+                                        </button>
+                                    ))}
+                                </div>
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages}
+                                    className="px-4 py-2 border border-primary rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary hover:text-white transition-colors"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </section>

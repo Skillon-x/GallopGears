@@ -89,13 +89,6 @@ const Listings = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-tertiary">My Listings</h1>
-        <button
-          onClick={handleAddNew}
-          className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Add New Listing
-        </button>
       </div>
 
       {deleteError && (

@@ -6,7 +6,6 @@ import {
     ShoppingBag,
     Crown,
     Clock,
-    Star,
 } from 'lucide-react';
 import { api } from '../../services/api';
 
@@ -234,7 +233,7 @@ const DashboardStats = () => {
                     title="Total Inquiries"
                     value={displayStats.performance?.totalInquiries || 0}
                     subtitle="Last 30 days"
-                    icon={Star}
+                    icon={MessageSquare}
                 />
             </div>
         </div>

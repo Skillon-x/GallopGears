@@ -25,7 +25,6 @@ const homeRoutes = require('./src/routes/home.routes');
 const supportRoutes = require('./src/routes/support.routes');
 const searchRoutes = require('./src/routes/search.routes');
 const messagingRoutes = require('./src/routes/messaging.routes');
-const reviewRoutes = require('./src/routes/review.routes');
 const recommendationRoutes = require('./src/routes/recommendation.routes');
 const visibilityRoutes = require('./src/routes/visibility.routes');
 const verificationRoutes = require('./src/routes/verification.routes');
@@ -71,12 +70,13 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/messaging', messagingRoutes);
-app.use('/api/reviews', reviewRoutes);
+
 app.use('/api/recommendations', recommendationRoutes);
 app.use('/api/visibility', visibilityRoutes);
 app.use('/api/verification', verificationRoutes);
 app.use('/api/listings', listingRoutes);
 app.use('/api/photos', photoRoutes);
+app.use('/api/transactions', transactionRoutes);
 
 // Error handlers
 app.use(notFound);

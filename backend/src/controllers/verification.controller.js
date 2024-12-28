@@ -204,4 +204,24 @@ exports.getPremiumStables = async (req, res) => {
             message: 'Server error'
         });
     }
+};
+
+// Check seller's performance metrics
+const checkSellerPerformance = async (seller) => {
+    // Check listing quality
+    if (seller.listings && seller.listings.length >= 5) {
+        points += 10;
+    }
+
+    // Check response rate
+    if (seller.statistics.responseRate >= 90) {
+        points += 10;
+    }
+
+    // Check average response time
+    if (seller.statistics.averageResponseTime <= 24) { // 24 hours
+        points += 10;
+    }
+
+    return points;
 }; 

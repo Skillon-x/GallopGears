@@ -230,16 +230,6 @@ const sellerSchema = new mongoose.Schema({
             type: Number,
             default: 0
         },
-        rating: {
-            type: Number,
-            default: 0,
-            min: 0,
-            max: 5
-        },
-        reviewCount: {
-            type: Number,
-            default: 0
-        },
         responseRate: {
             type: Number,
             default: 0

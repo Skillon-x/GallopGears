@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 // Base URL configuration
-//const API_BASE_URL = 'http://localhost:5000/api';
-const API_BASE_URL = 'https://gallopgears.onrender.com/api'
+const API_BASE_URL = 'http://localhost:5000/api';
+// const API_BASE_URL = 'https://gallopgears.onrender.com/api'
 // Create axios instance with default config
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
@@ -187,16 +187,15 @@ export const endpoints = {
     },
     // Seller endpoints
     sellers: {
-        profile: '/sellers/me',
+        profile: '/sellers/profile',
+        me: '/sellers/me',
         createprofile: '/sellers/profile',
         subscribe: '/sellers/subscribe',
         createSubscriptionOrder: '/sellers/subscribe/create-order',
         verifySubscriptionPayment: '/sellers/subscribe/verify-payment',
         listings: '/sellers/listings',
         stats: '/sellers/analytics',
-        reviews: '/sellers/reviews',
         plans: '/sellers/plans',
-        bankDetails: '/sellers/bank-details',
         payments: '/sellers/payments',
         inquiries: '/sellers/inquiries',
         subscription: '/sellers/subscription',
@@ -204,10 +203,14 @@ export const endpoints = {
         performance: '/sellers/dashboard/performance',
         listingAnalytics: '/sellers/dashboard/analytics/listings',
         inquiryAnalytics: '/sellers/dashboard/analytics/inquiries',
+        getSettings: '/sellers/settings',
+        updateSettings: '/sellers/settings',
+        updateProfile: '/sellers/profile',
+        updateBankDetails: '/sellers/bank-details',
+        updateNotificationSettings: '/sellers/settings/notifications',
         dashboardStats: '/seller/dashboard/stats',
         recentActivities: '/sellers/dashboard/activities',
         dashboardPerformance: '/seller/dashboard/performance',
-        dashboardStats: '/seller/dashboard/stats',
         listingAnalytics: '/seller/dashboard/analytics/listings',
         inquiryAnalytics: '/seller/dashboard/analytics/inquiries',
     },
@@ -525,6 +528,14 @@ export const api = {
                 handleError(error);
             }
         },
+        alerts: async () => {
+            try {
+                const response = await apiClient.get(endpoints.users.alerts);
+                return handleResponse(response);
+            } catch (error) {
+                handleError(error);
+            }
+        },
         updateAlerts: async (data) => {
             try {
                 const response = await apiClient.put(endpoints.users.alerts, data);
@@ -626,7 +637,7 @@ export const api = {
         },
         getProfile: async () => {
             try {
-                const response = await apiClient.get(endpoints.sellers.profile);
+                const response = await apiClient.get(endpoints.sellers.me);
                 return handleResponse(response);
             } catch (error) {
                 handleError(error);
@@ -730,17 +741,9 @@ export const api = {
                 handleError(error);
             }
         },
-        getReviews: async () => {
-            try {
-                const response = await apiClient.get(endpoints.sellers.reviews);
-                return handleResponse(response);
-            } catch (error) {
-                handleError(error);
-            }
-        },
         updateBankDetails: async (data) => {
             try {
-                const response = await apiClient.put(endpoints.sellers.bankDetails, data);
+                const response = await apiClient.put(endpoints.sellers.updateBankDetails, data);
                 return handleResponse(response);
             } catch (error) {
                 handleError(error);
@@ -861,6 +864,30 @@ export const api = {
         inquiryAnalytics: async () => {
             try {
                 const response = await apiClient.get(endpoints.sellers.inquiryAnalytics);
+                return handleResponse(response);
+            } catch (error) {
+                handleError(error);
+            }
+        },
+        getSettings: async () => {
+            try {
+                const response = await apiClient.get(endpoints.sellers.getSettings);
+                return handleResponse(response);
+            } catch (error) {
+                handleError(error);
+            }
+        },
+        updateSettings: async (data) => {
+            try {
+                const response = await apiClient.put(endpoints.sellers.updateSettings, data);
+                return handleResponse(response);
+            } catch (error) {
+                handleError(error);
+            }
+        },
+        updateNotificationSettings: async (data) => {
+            try {
+                const response = await apiClient.put(endpoints.sellers.updateNotificationSettings, data);
                 return handleResponse(response);
             } catch (error) {
                 handleError(error);

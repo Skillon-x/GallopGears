@@ -8,7 +8,8 @@ import {
   EyeOff,
   AlertCircle,
   Store,
-  User
+  User,
+  Info
 } from 'lucide-react';
 
 const LoginForm = () => {
@@ -20,23 +21,65 @@ const LoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('user'); // 'user' or 'seller'
+  const [rememberMe, setRememberMe] = useState(false);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
+  // Email validation
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Input sanitization
+  const sanitizeInput = (input) => {
+    return input.trim().replace(/[<>]/g, '');
+  };
+
+  const handleEmailChange = (e) => {
+    const sanitizedEmail = sanitizeInput(e.target.value);
+    setEmail(sanitizedEmail);
+  };
+
+  const handlePasswordChange = (e) => {
+    const sanitizedPassword = sanitizeInput(e.target.value);
+    if (sanitizedPassword.length <= 50) { // Maximum length check
+      setPassword(sanitizedPassword);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+
+    // Validate email
+    if (!validateEmail(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    // Validate password
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long');
+      return;
+    }
+
     setLoading(true);
 
     try {
       const success = await login(email, password);
       if (success) {
-        // Redirect to the intended page or default based on role
-        const from = location.state?.from?.pathname || 
-          (activeTab === 'seller' ? '/seller/dashboard' : '/');
+        // Save email if remember me is checked
+        if (rememberMe) {
+          localStorage.setItem('rememberedEmail', email);
+        } else {
+          localStorage.removeItem('rememberedEmail');
+        }
+        
+        // Redirect to the intended page or default
+        const from = location.state?.from?.pathname || '/';
         navigate(from);
       }
     } catch (err) {
@@ -46,51 +89,40 @@ const LoginForm = () => {
     }
   };
 
+  // Load remembered email on mount
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem('rememberedEmail');
+    if (rememberedEmail) {
+      setEmail(rememberedEmail);
+      setRememberMe(true);
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-accent/30 via-white to-primary/30 py-20 md:py-24 px-4 md:px-8">
       <div className="max-w-md mx-auto">
         <div className="backdrop-blur-sm bg-white/90 rounded-2xl shadow-2xl overflow-hidden border border-white">
-          {/* Tabs */}
+          {/* Header */}
           <div className="bg-gradient-to-r from-primary via-accent to-primary p-8 md:p-10 text-white">
-            <div className="flex space-x-2 mb-8">
-              <button
-                onClick={() => setActiveTab('user')}
-                className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  activeTab === 'user'
-                    ? 'bg-white/20 backdrop-blur-sm shadow-lg'
-                    : 'hover:bg-white/10'
-                }`}
-              >
-                <User className="h-4 w-4" />
-                <span>User Login</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('seller')}
-                className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  activeTab === 'seller'
-                    ? 'bg-white/20 backdrop-blur-sm shadow-lg'
-                    : 'hover:bg-white/10'
-                }`}
-              >
-                <Store className="h-4 w-4" />
-                <span>Seller Login</span>
-              </button>
-            </div>
-
-            {/* Header */}
             <div className="text-center">
               <h2 className="text-2xl md:text-3xl font-bold">
                 Welcome back!
               </h2>
               <p className="text-white/90 mt-2">
-                {activeTab === 'seller' 
-                  ? 'Login to manage your horse listings'
-                  : 'Login to continue your horse search'}
+                Login to continue your journey
               </p>
             </div>
           </div>
 
           <div className="p-8 md:p-10">
+            {/* Info Message */}
+            <div className="mb-6 p-4 bg-primary/5 backdrop-blur-sm border border-primary/10 rounded-xl flex items-start space-x-3">
+              <Info className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-tertiary">
+                Your account type (buyer or seller) will be automatically detected upon login. If you're a seller, you'll be redirected to your seller dashboard.
+              </p>
+            </div>
+
             {/* Error Message */}
             {error && (
               <div className="mb-6 p-4 bg-red-50/80 backdrop-blur-sm border border-red-200 rounded-xl flex items-start space-x-2">
@@ -110,7 +142,8 @@ const LoginForm = () => {
                     id="email"
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={handleEmailChange}
+                    maxLength={100}
                     className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20"
                     placeholder="Enter your email"
                     required
@@ -128,7 +161,9 @@ const LoginForm = () => {
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={handlePasswordChange}
+                    minLength={8}
+                    maxLength={50}
                     className="w-full pl-10 pr-12 py-2 border border-gray-200 rounded-lg text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/20"
                     placeholder="Enter your password"
                     required
@@ -153,6 +188,8 @@ const LoginForm = () => {
                   <input
                     id="remember-me"
                     type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
                     className="h-4 w-4 text-primary focus:ring-primary/20 border-gray-300 rounded"
                   />
                   <label htmlFor="remember-me" className="ml-2 block text-sm text-tertiary">
@@ -170,7 +207,7 @@ const LoginForm = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-primary text-white py-2 px-4 rounded-lg hover:bg-accent transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white py-2 px-4 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <>
@@ -184,38 +221,26 @@ const LoginForm = () => {
             </form>
 
             {/* Registration Links */}
-            <div className="mt-8 text-center">
+            <div className="mt-8 text-center space-y-4">
               <p className="text-tertiary">
                 Don't have an account?{' '}
-                {activeTab === 'seller' ? (
-                  <Link
-                    to="/register/seller"
-                    className="text-primary hover:text-accent font-medium"
-                  >
-                    Register as Seller
-                  </Link>
-                ) : (
-                  <Link
-                    to="/register"
-                    className="text-primary hover:text-accent font-medium"
-                  >
-                    Create Account
-                  </Link>
-                )}
+                <Link
+                  to="/register"
+                  className="text-primary hover:text-accent font-medium"
+                >
+                  Register now
+                </Link>
+              </p>
+              <p className="text-tertiary text-sm">
+                Want to sell horses?{' '}
+                <Link
+                  to="/register/seller"
+                  className="text-primary hover:text-accent font-medium"
+                >
+                  Become a seller
+                </Link>
               </p>
             </div>
-          </div>
-        </div>
-
-        {/* Help Text */}
-        <div className="mt-12 text-center">
-          <div className="backdrop-blur-sm bg-white/80 rounded-xl py-5 px-8 inline-block shadow-lg border border-white/50">
-            <p className="text-gray-700">
-              Need help? Contact our support team at{' '}
-              <a href="mailto:support@gallopinggears.com" className="text-primary hover:text-accent transition-colors font-medium">
-                support@gallopinggears.com
-              </a>
-            </p>
           </div>
         </div>
       </div>

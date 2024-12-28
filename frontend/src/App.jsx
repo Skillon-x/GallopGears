@@ -13,9 +13,9 @@ import Listings from './pages/SellerDashboard/Listings';
 import SellerInquiries from './pages/SellerDashboard/Inquiries';
 import UserInquiries from './pages/UserDashboard/Inquiries';
 import Favorites from './pages/UserDashboard/Favorites';
-import Reviews from './pages/SellerDashboard/Reviews';
 import Payments from './pages/SellerDashboard/Payments';
 import Settings from './pages/SellerDashboard/Settings';
+import Notifications from './pages/Notifications/Notifications';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
 import SellerSubscriptionPlans from './pages/SellerSubscriptionPlans';
@@ -27,53 +27,55 @@ import AdminUsers from './pages/Admin/Users';
 import AdminListings from './pages/Admin/Listings';
 import AdminPayments from './pages/Admin/Payments';
 import AdminSettings from './pages/Admin/Settings';
+import IncompleteRegistrationGuard from './components/IncompleteRegistrationGuard';
 
 const App = () => {
   return (
     <AuthProvider>
       <Router>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Layout><Home /></Layout>} />
-          <Route path="/browse" element={<Layout><Browse /></Layout>} />
-          <Route path="/horses/:id" element={<Layout><HorseDetails /></Layout>} />
-          <Route path="/login" element={<Layout><Login /></Layout>} />
-          <Route path="/register" element={<Layout><Register /></Layout>} />
-          <Route path="/register/seller" element={<Layout><RegisterSellerFlow /></Layout>} />
-          <Route path="/pricing" element={<Layout><SellerSubscriptionPlans /></Layout>} />
-          <Route path="/horses/:id" element={<Layout><HorseDetails /></Layout>} />
+        <IncompleteRegistrationGuard>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Layout><Home /></Layout>} />
+            <Route path="/browse" element={<Layout><Browse /></Layout>} />
+            <Route path="/horses/:id" element={<Layout><HorseDetails /></Layout>} />
+            <Route path="/login" element={<Layout><Login /></Layout>} />
+            <Route path="/register" element={<Layout><Register /></Layout>} />
+            <Route path="/register/seller" element={<Layout><RegisterSellerFlow /></Layout>} />
+            <Route path="/pricing" element={<Layout><SellerSubscriptionPlans /></Layout>} />
 
-          {/* Admin Routes */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route element={<AdminProtectedRoute />}>
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/admin/users" element={<AdminUsers />} />
-            <Route path="/admin/listings" element={<AdminListings />} />
-            <Route path="/admin/payments" element={<AdminPayments />} />
-            <Route path="/admin/settings" element={<AdminSettings />} />
-          </Route>
+            {/* Admin Routes */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route element={<AdminProtectedRoute />}>
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/users" element={<AdminUsers />} />
+              <Route path="/admin/listings" element={<AdminListings />} />
+              <Route path="/admin/payments" element={<AdminPayments />} />
+              <Route path="/admin/settings" element={<AdminSettings />} />
+            </Route>
 
-          {/* Protected Routes */}
-          <Route element={<ProtectedRoute />}>
-            {/* User Routes */}
-            <Route path="/inquiries" element={<Layout><UserInquiries /></Layout>} />
-            <Route path="/inquire/:id" element={<Layout><Enquire /></Layout>} />
-            <Route path="/favorites" element={<Layout><Favorites /></Layout>} />
-            {/* Seller Dashboard Routes */}
-            <Route path="/seller/dashboard" element={<Layout><Dashboard /></Layout>} />
-            
-            {/* Listings Management */}
-            <Route path="/seller/listings" element={<Layout><Listings /></Layout>} />
-            <Route path="/seller/listings/new" element={<Layout><AddListing /></Layout>} />
-            <Route path="/seller/listings/edit/:id" element={<Layout><AddListing /></Layout>} />
-            
-            {/* Other Seller Features */}
-            <Route path="/seller/inquiries" element={<Layout><SellerInquiries /></Layout>} />
-            <Route path="/seller/reviews" element={<Layout><Reviews /></Layout>} />
-            <Route path="/seller/payments" element={<Layout><Payments /></Layout>} />
-            <Route path="/seller/settings" element={<Layout><Settings /></Layout>} />
-          </Route>
-        </Routes>
+            {/* Protected Routes */}
+            <Route element={<ProtectedRoute />}>
+              {/* User Routes */}
+              <Route path="/notifications" element={<Layout><Notifications /></Layout>} />
+              <Route path="/inquiries" element={<Layout><UserInquiries /></Layout>} />
+              <Route path="/inquire/:id" element={<Layout><Enquire /></Layout>} />
+              <Route path="/favorites" element={<Layout><Favorites /></Layout>} />
+              {/* Seller Dashboard Routes */}
+              <Route path="/seller/dashboard" element={<Layout><Dashboard /></Layout>} />
+              
+              {/* Listings Management */}
+              <Route path="/seller/listings" element={<Layout><Listings /></Layout>} />
+              <Route path="/seller/listings/new" element={<Layout><AddListing /></Layout>} />
+              <Route path="/seller/listings/edit/:id" element={<Layout><AddListing /></Layout>} />
+              
+              {/* Other Seller Features */}
+              <Route path="/seller/inquiries" element={<Layout><SellerInquiries /></Layout>} />
+              <Route path="/seller/payments" element={<Layout><Payments /></Layout>} />
+              <Route path="/seller/settings" element={<Layout><Settings /></Layout>} />
+            </Route>
+          </Routes>
+        </IncompleteRegistrationGuard>
       </Router>
     </AuthProvider>
   );

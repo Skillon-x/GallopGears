@@ -792,6 +792,46 @@ const SubscriptionHistory = ({ history }) => {
   );
 };
 
+const TransactionHistory = ({ transactions }) => {
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mt-6">
+      <div className="p-6">
+        <h3 className="text-lg font-semibold text-tertiary mb-4">Transaction History</h3>
+        {transactions.length === 0 ? (
+          <p className="text-tertiary/70">No transactions available.</p>
+        ) : (
+          <div className="space-y-4">
+            {transactions.map((transaction) => (
+              <div key={transaction._id} className="flex justify-between items-center py-3 border-b last:border-0">
+                <div>
+                  <p className="font-medium text-tertiary">
+                    {transaction.type === 'subscription' ? 
+                      `${transaction.subscriptionDetails?.package} Subscription` : 
+                      transaction.type}
+                  </p>
+                  <p className="text-sm text-tertiary/70">
+                    {new Date(transaction.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-medium text-tertiary">₹{transaction.amount.toLocaleString()}</p>
+                  <span className={`inline-flex px-2 py-1 text-xs rounded-full ${
+                    transaction.status === 'completed' ? 'bg-green-100 text-green-600' :
+                    transaction.status === 'failed' ? 'bg-red-100 text-red-600' :
+                    'bg-yellow-100 text-yellow-600'
+                  }`}>
+                    {transaction.status}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const verifySubscriptionFeatures = (features, expectedFeatures) => {
   return (
     features.maxPhotos === expectedFeatures.maxPhotos &&
@@ -812,7 +852,7 @@ const verifySubscriptionFeatures = (features, expectedFeatures) => {
 
 const Payments = () => {
   const [subscription, setSubscription] = useState(null);
-  const [history, setHistory] = useState([]);
+  const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -821,30 +861,45 @@ const Payments = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  useEffect(() => {
-    fetchSubscriptionData();
-    
-    // Refresh every 5 minutes
-    const refreshInterval = setInterval(fetchSubscriptionData, 5 * 60 * 1000);
-    
-    return () => clearInterval(refreshInterval);
-  }, []);
-
-  const fetchSubscriptionData = async () => {
+  const fetchData = async () => {
     try {
-      const response = await api.sellers.getSubscription();
-      if (response?.data?.success) {
-        setSubscription(response.data.subscription);
-        setHistory(response.data.history || []);
+      setLoading(true);
+      setError(null);
+      console.log('Fetching subscription and transaction data...');
+      const [subscriptionResponse, transactionsResponse] = await Promise.all([
+        api.sellers.getSubscription(),
+        api.sellers.getPaymentHistory()
+      ]);
+
+      console.log('Subscription response:', subscriptionResponse);
+      console.log('Transactions response:', transactionsResponse);
+
+      if (subscriptionResponse.data?.success) {
+        setSubscription(subscriptionResponse.data.subscription);
       } else {
-        throw new Error('Failed to fetch subscription data');
+        console.warn('Invalid subscription response format:', subscriptionResponse);
       }
-      setLoading(false);
-    } catch (err) {
-      setError(err.message);
+
+      if (transactionsResponse.data?.success) {
+        console.log('Setting transactions:', transactionsResponse.data.transactions);
+        setTransactions(transactionsResponse.data.transactions);
+      } else {
+        console.warn('Invalid transactions response format:', transactionsResponse);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setError('Failed to load subscription data. Please try again.');
+    } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchData();
+    // Refresh data every 5 minutes
+    const interval = setInterval(fetchData, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleRenewSubscription = () => {
     navigate('/seller/subscription-plans');
@@ -869,7 +924,7 @@ const Payments = () => {
         }
 
         toast.success('Free plan renewed successfully!');
-        fetchSubscriptionData();
+        fetchData();
         return;
       }
 
@@ -927,7 +982,7 @@ const Payments = () => {
             }
 
             toast.success('Subscription renewed successfully!');
-            fetchSubscriptionData();
+            fetchData();
           } catch (error) {
             console.error('Payment verification failed:', error);
             toast.error(error.message || 'Payment verification failed');
@@ -1043,7 +1098,7 @@ const Payments = () => {
 
       <SubscriptionCard 
         subscription={subscription} 
-        onRenew={fetchSubscriptionData}
+        onRenew={handleQuickRenewal}
       />
       
       {(!subscription || subscription.status === 'expired') && (
@@ -1058,7 +1113,7 @@ const Payments = () => {
         </div>
       )}
 
-      <SubscriptionHistory history={history} />
+      <TransactionHistory transactions={transactions} />
       {subscription?.queuedPlans?.length > 0 && (
         <QueuedPlansCard queuedPlans={subscription.queuedPlans} />
       )}
@@ -1067,12 +1122,12 @@ const Payments = () => {
       <AlertModal
         isOpen={showQuickRenewalModal}
         onClose={() => setShowQuickRenewalModal(false)}
-        title="Quick Plan Renewal"
-        message={`Would you like to renew your ${subscription?.plan} plan for another ${subscription?.plan === 'Free' ? '7' : '30'} days? This will extend your current subscription.`}
-        type="confirm"
-        confirmText="Renew Now"
+        title="Confirm Quick Renewal"
+        message={`Are you sure you want to renew your ${subscription?.plan} subscription?`}
+        confirmText="Renew"
         onConfirm={handleQuickRenewalConfirm}
-        isLoading={isProcessing}
+        isProcessing={isProcessing}
+        type="info"
       />
     </div>
   );

@@ -133,12 +133,12 @@ exports.verifySubscriptionPayment = async (req, res) => {
 
         // Create transaction record
         const transaction = await Transaction.create({
-            seller: req.user._id,
+            seller: req.seller._id,
             type: 'subscription',
             amount: req.body.amount,
             status: 'completed',
             paymentMethod: isTestMode ? 'test' : 'razorpay',
-            paymentDetails: {
+            razorpayDetails: {
                 orderId: razorpay_order_id,
                 paymentId: razorpay_payment_id,
                 signature: razorpay_signature
@@ -324,12 +324,12 @@ exports.verifyPayment = async (req, res) => {
 
         // Create transaction record
         const transaction = await Transaction.create({
-            seller: req.user._id,
+            seller: req.seller._id,
             type: 'subscription',
             amount: req.body.amount,
             status: 'completed',
             paymentMethod: isTestMode ? 'test' : 'razorpay',
-            paymentDetails: {
+            razorpayDetails: {
                 orderId: razorpay_order_id,
                 paymentId: razorpay_payment_id,
                 signature: razorpay_signature

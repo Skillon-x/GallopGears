@@ -1,121 +1,207 @@
 import React from 'react';
-import { Facebook, Instagram, Twitter, Youtube, Phone, Mail, MapPin } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { 
+    Facebook, 
+    Instagram, 
+    Twitter, 
+    Youtube, 
+    Phone, 
+    Mail, 
+    MapPin,
+    ShoppingBag,
+    Store,
+    HelpCircle,
+    FileText,
+    Shield,
+    Award,
+    Clock,
+    Heart,
+    MessageSquare,
+    Settings,
+    ChevronRight
+} from 'lucide-react';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-secondary text-tertiary">
-      {/* Main Footer Content */}
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Company Information */}
-          <div className="space-y-4">
-            <h3 className="text-xl font-bold text-primary mb-4">About GallopingGears</h3>
-            <p className="text-tertiary/80">The premier marketplace for buying and selling horses, stables, and equestrian equipment. Your trusted partner in the equestrian world.</p>
-            <div className="flex space-x-4">
-              <Facebook className="w-6 h-6 cursor-pointer text-tertiary/70 hover:text-primary transition-colors" />
-              <Instagram className="w-6 h-6 cursor-pointer text-tertiary/70 hover:text-primary transition-colors" />
-              <Twitter className="w-6 h-6 cursor-pointer text-tertiary/70 hover:text-primary transition-colors" />
-              <Youtube className="w-6 h-6 cursor-pointer text-tertiary/70 hover:text-primary transition-colors" />
+    <footer className="bg-white/95 backdrop-blur-sm border-t border-gray-100 mt-auto">
+      {/* Trust Badges */}
+      <div className="border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:ml-64">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="flex items-center justify-center p-6 rounded-xl bg-gradient-to-r from-primary/5 to-accent/5 hover:from-primary/10 hover:to-accent/10 transition-all duration-300 group">
+              <Shield className="w-6 h-6 text-primary group-hover:scale-110 transition-transform duration-300" />
+              <div className="ml-4">
+                <h3 className="text-sm font-semibold text-tertiary">Secure Payments</h3>
+                <p className="text-xs text-tertiary/60 mt-0.5">Safe & encrypted transactions</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-center p-6 rounded-xl bg-gradient-to-r from-primary/5 to-accent/5 hover:from-primary/10 hover:to-accent/10 transition-all duration-300 group">
+              <Award className="w-6 h-6 text-primary group-hover:scale-110 transition-transform duration-300" />
+              <div className="ml-4">
+                <h3 className="text-sm font-semibold text-tertiary">Verified Sellers</h3>
+                <p className="text-xs text-tertiary/60 mt-0.5">Trusted marketplace</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-center p-6 rounded-xl bg-gradient-to-r from-primary/5 to-accent/5 hover:from-primary/10 hover:to-accent/10 transition-all duration-300 group">
+              <Clock className="w-6 h-6 text-primary group-hover:scale-110 transition-transform duration-300" />
+              <div className="ml-4">
+                <h3 className="text-sm font-semibold text-tertiary">24/7 Support</h3>
+                <p className="text-xs text-tertiary/60 mt-0.5">Always here to help</p>
+              </div>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Quick Links */}
+      {/* Main Footer Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:ml-64">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {/* Main Navigation */}
           <div>
-            <h3 className="text-xl font-bold text-primary mb-4">Quick Links</h3>
-            <ul className="space-y-2">
-              <li className="text-tertiary/80 hover:text-primary cursor-pointer transition-colors">Browse Horses</li>
-              <li className="text-tertiary/80 hover:text-primary cursor-pointer transition-colors">Premium Horses</li>
-              <li className="text-tertiary/80 hover:text-primary cursor-pointer transition-colors">Stables for Sale</li>
-              <li className="text-tertiary/80 hover:text-primary cursor-pointer transition-colors">Equipment Store</li>
-              <li className="text-tertiary/80 hover:text-primary cursor-pointer transition-colors">List Your Horse</li>
-              <li className="text-tertiary/80 hover:text-primary cursor-pointer transition-colors">Pricing Plans</li>
-              <li className="text-tertiary/80 hover:text-primary cursor-pointer transition-colors">Success Stories</li>
+            <h3 className="text-lg font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-6">Navigation</h3>
+            <ul className="space-y-3">
+              <li>
+                <Link to="/" className="group flex items-center text-sm text-tertiary/70 hover:text-primary transition-colors">
+                  <ShoppingBag className="w-4 h-4 mr-2" />
+                  <span>Browse Horses</span>
+                  <ChevronRight className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 transition-all duration-300" />
+                </Link>
+              </li>
+              <li>
+                <Link to="/pricing" className="group flex items-center text-sm text-tertiary/70 hover:text-primary transition-colors">
+                  <FileText className="w-4 h-4 mr-2" />
+                  <span>Pricing Plans</span>
+                  <ChevronRight className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 transition-all duration-300" />
+                </Link>
+              </li>
+              <li>
+                <Link to="/register/seller" className="group flex items-center text-sm text-tertiary/70 hover:text-primary transition-colors">
+                  <Store className="w-4 h-4 mr-2" />
+                  <span>Become a Seller</span>
+                  <ChevronRight className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 transition-all duration-300" />
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Seller Resources */}
+          <div>
+            <h3 className="text-lg font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-6">Seller Resources</h3>
+            <ul className="space-y-3">
+              <li>
+                <Link to="/seller/dashboard" className="group flex items-center text-sm text-tertiary/70 hover:text-primary transition-colors">
+                  <Store className="w-4 h-4 mr-2" />
+                  <span>Seller Dashboard</span>
+                  <ChevronRight className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 transition-all duration-300" />
+                </Link>
+              </li>
+              <li>
+                <Link to="/seller/listings" className="group flex items-center text-sm text-tertiary/70 hover:text-primary transition-colors">
+                  <ShoppingBag className="w-4 h-4 mr-2" />
+                  <span>Manage Listings</span>
+                  <ChevronRight className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 transition-all duration-300" />
+                </Link>
+              </li>
+              <li>
+                <Link to="/seller/inquiries" className="group flex items-center text-sm text-tertiary/70 hover:text-primary transition-colors">
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  <span>Manage Inquiries</span>
+                  <ChevronRight className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 transition-all duration-300" />
+                </Link>
+              </li>
+              <li>
+                <Link to="/seller/settings" className="group flex items-center text-sm text-tertiary/70 hover:text-primary transition-colors">
+                  <Settings className="w-4 h-4 mr-2" />
+                  <span>Account Settings</span>
+                  <ChevronRight className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 transition-all duration-300" />
+                </Link>
+              </li>
             </ul>
           </div>
 
           {/* Help & Support */}
           <div>
-            <h3 className="text-xl font-bold text-primary mb-4">Help & Support</h3>
-            <ul className="space-y-2">
-              <li className="text-tertiary/80 hover:text-primary cursor-pointer transition-colors">How to Buy</li>
-              <li className="text-tertiary/80 hover:text-primary cursor-pointer transition-colors">Seller Guidelines</li>
-              <li className="text-tertiary/80 hover:text-primary cursor-pointer transition-colors">Safety Tips</li>
-              <li className="text-tertiary/80 hover:text-primary cursor-pointer transition-colors">Fraud Prevention</li>
-              <li className="text-tertiary/80 hover:text-primary cursor-pointer transition-colors">FAQ</li>
-              <li className="text-tertiary/80 hover:text-primary cursor-pointer transition-colors">Contact Support</li>
-              <li className="text-tertiary/80 hover:text-primary cursor-pointer transition-colors">Report Issues</li>
+            <h3 className="text-lg font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-6">Help & Support</h3>
+            <ul className="space-y-3">
+              <li>
+                <Link to="/help/buying" className="group flex items-center text-sm text-tertiary/70 hover:text-primary transition-colors">
+                  <HelpCircle className="w-4 h-4 mr-2" />
+                  <span>Buying Guide</span>
+                  <ChevronRight className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 transition-all duration-300" />
+                </Link>
+              </li>
+              <li>
+                <Link to="/help/selling" className="group flex items-center text-sm text-tertiary/70 hover:text-primary transition-colors">
+                  <HelpCircle className="w-4 h-4 mr-2" />
+                  <span>Selling Guide</span>
+                  <ChevronRight className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 transition-all duration-300" />
+                </Link>
+              </li>
+              <li>
+                <Link to="/safety" className="group flex items-center text-sm text-tertiary/70 hover:text-primary transition-colors">
+                  <Shield className="w-4 h-4 mr-2" />
+                  <span>Safety Tips</span>
+                  <ChevronRight className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 transition-all duration-300" />
+                </Link>
+              </li>
             </ul>
           </div>
 
-          {/* Contact Information */}
+          {/* Contact & Social */}
           <div>
-            <h3 className="text-xl font-bold text-primary mb-4">Contact Us</h3>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <Phone className="w-5 h-5 text-primary" />
-                <span className="text-tertiary/80">+91 98765 43210</span>
+            <h3 className="text-lg font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-6">Connect With Us</h3>
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <a 
+                  href="mailto:support@gallopinggears.com" 
+                  className="group flex items-center text-sm text-tertiary/70 hover:text-primary transition-colors"
+                >
+                  <Mail className="w-4 h-4 mr-2" />
+                  <span>support@gallopinggears.com</span>
+                </a>
+                <a 
+                  href="tel:+919876543210" 
+                  className="group flex items-center text-sm text-tertiary/70 hover:text-primary transition-colors"
+                >
+                  <Phone className="w-4 h-4 mr-2" />
+                  <span>+91 98765 43210</span>
+                </a>
               </div>
-              <div className="flex items-center space-x-3">
-                <Mail className="w-5 h-5 text-primary" />
-                <span className="text-tertiary/80">support@gallopinggears.in</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <MapPin className="w-5 h-5 text-primary" />
-                <span className="text-tertiary/80">Mumbai, Maharashtra, India</span>
-              </div>
-            </div>
-            
-            {/* Newsletter Signup */}
-            <div className="mt-6">
-              <h4 className="text-primary font-semibold mb-2">Join Our Newsletter</h4>
-              <div className="flex">
-                <input 
-                  type="email" 
-                  placeholder="Enter your email"
-                  className="px-4 py-2 rounded-l-lg w-full bg-white text-tertiary focus:outline-none focus:ring-2 focus:ring-primary border-r-0"
-                />
-                <button className="bg-primary hover:bg-accent px-4 py-2 rounded-r-lg text-white transition-all duration-300">
-                  Join
-                </button>
+              
+              {/* Social Links */}
+              <div>
+                <p className="text-sm font-medium text-tertiary mb-3">Follow Us</p>
+                <div className="flex space-x-2">
+                  <a href="#" className="p-2 rounded-lg bg-gradient-to-r from-primary/5 to-accent/5 hover:from-primary/10 hover:to-accent/10 transition-all duration-300 group">
+                    <Facebook className="w-4 h-4 text-primary group-hover:scale-110 transition-transform duration-300" />
+                  </a>
+                  <a href="#" className="p-2 rounded-lg bg-gradient-to-r from-primary/5 to-accent/5 hover:from-primary/10 hover:to-accent/10 transition-all duration-300 group">
+                    <Instagram className="w-4 h-4 text-primary group-hover:scale-110 transition-transform duration-300" />
+                  </a>
+                  <a href="#" className="p-2 rounded-lg bg-gradient-to-r from-primary/5 to-accent/5 hover:from-primary/10 hover:to-accent/10 transition-all duration-300 group">
+                    <Twitter className="w-4 h-4 text-primary group-hover:scale-110 transition-transform duration-300" />
+                  </a>
+                  <a href="#" className="p-2 rounded-lg bg-gradient-to-r from-primary/5 to-accent/5 hover:from-primary/10 hover:to-accent/10 transition-all duration-300 group">
+                    <Youtube className="w-4 h-4 text-primary group-hover:scale-110 transition-transform duration-300" />
+                  </a>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Additional Links */}
-        <div className="border-t border-tertiary/10 mt-12 pt-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div className="space-x-4">
-              <span className="text-tertiary/80 hover:text-primary cursor-pointer transition-colors">Terms of Service</span>
-              <span className="text-tertiary/80 hover:text-primary cursor-pointer transition-colors">Privacy Policy</span>
-              <span className="text-tertiary/80 hover:text-primary cursor-pointer transition-colors">Refund Policy</span>
-              <span className="text-tertiary/80 hover:text-primary cursor-pointer transition-colors">Legal</span>
+        {/* Legal Links & Copyright */}
+        <div className="border-t border-gray-100 mt-12 pt-8">
+          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+            <div className="flex flex-wrap justify-center md:justify-start gap-6 text-sm">
+              <Link to="/terms" className="text-tertiary/70 hover:text-primary transition-colors">Terms of Service</Link>
+              <Link to="/privacy" className="text-tertiary/70 hover:text-primary transition-colors">Privacy Policy</Link>
+              <Link to="/refund" className="text-tertiary/70 hover:text-primary transition-colors">Refund Policy</Link>
             </div>
-            <div className="text-right md:text-right">
-              <span className="text-tertiary/70">© {currentYear} GallopingGears. All rights reserved.</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Trust Badges */}
-        <div className="mt-8 text-center">
-          <div className="flex flex-wrap justify-center gap-4">
-            <div className="flex items-center">
-              <span className="bg-white/50 text-primary px-6 py-2 rounded-lg text-sm font-semibold shadow-sm">
-                Secure Payments
-              </span>
-            </div>
-            <div className="flex items-center">
-              <span className="bg-white/50 text-primary px-6 py-2 rounded-lg text-sm font-semibold shadow-sm">
-                Verified Sellers
-              </span>
-            </div>
-            <div className="flex items-center">
-              <span className="bg-white/50 text-primary px-6 py-2 rounded-lg text-sm font-semibold shadow-sm">
-                24/7 Support
-              </span>
+            <div className="text-sm text-tertiary/60">
+              © {currentYear} GallopingGears. All rights reserved.
             </div>
           </div>
         </div>

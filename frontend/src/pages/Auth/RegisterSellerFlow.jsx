@@ -34,7 +34,19 @@ const RegisterSellerFlow = () => {
                     console.log('User profile response:', response);
                     if (response?.data?.user) {
                         console.log('Setting active step and user data');
-                        setActiveStep(1);
+                        // Set registration intent and step if coming from registration
+                        const currentPath = window.location.pathname;
+                        if (currentPath === '/register/seller') {
+                            console.log('Setting registration intent and step 1');
+                            localStorage.setItem('sellerRegistrationIntent', 'true');
+                            localStorage.setItem('registrationStep', '1');
+                            setActiveStep(1);
+                        } else if (currentPath === '/pricing' && response.data.user.role === 'pending_seller') {
+                            console.log('Setting registration step 2');
+                            localStorage.setItem('sellerRegistrationIntent', 'true');
+                            localStorage.setItem('registrationStep', '2');
+                            setActiveStep(2);
+                        }
                         setUserData(response.data.user);
                     }
                 } catch (error) {
@@ -45,7 +57,16 @@ const RegisterSellerFlow = () => {
         };
 
         fetchUserProfile();
-    }, [isAuthenticated, user]);
+
+        // Cleanup function
+        return () => {
+            // Clear registration intent if user completes or leaves flow
+            if (user?.isSeller || (!isAuthenticated && activeStep === 0)) {
+                localStorage.removeItem('sellerRegistrationIntent');
+                localStorage.removeItem('registrationStep');
+            }
+        };
+    }, [isAuthenticated, user, activeStep]);
 
     useEffect(() => {
         console.log('Navigation check - Current step:', activeStep);
@@ -58,11 +79,15 @@ const RegisterSellerFlow = () => {
         setLoading(true);
         setError(null);
         try {
+            // Set registration intent in both server and localStorage
             const registerResponse = await api.auth.register({
                 name: formData.name,
                 email: formData.email,
                 password: formData.password,
-                role: 'user'
+                role: 'user',
+                registrationStep: 1,
+                isSellerRegistration: true,
+                registrationTimestamp: new Date()
             });
 
             if (registerResponse.data?.success) {
@@ -70,11 +95,17 @@ const RegisterSellerFlow = () => {
                 const loginSuccess = await login(formData.email, formData.password);
 
                 if (loginSuccess) {
+                    // Set localStorage as backup
+                    localStorage.setItem('sellerRegistrationIntent', 'true');
+                    localStorage.setItem('registrationStep', '1');
+                    localStorage.setItem('registrationTimestamp', new Date().toISOString());
+
                     const profileResponse = await api.auth.getProfile();
                     if (profileResponse?.data?.user) {
                         console.log('User profile after login:', profileResponse.data.user);
                         setUserData(profileResponse.data.user);
                         setActiveStep(1);
+                        navigate('/register/seller', { replace: true });
                     } else {
                         throw new Error('Failed to get user profile');
                     }
@@ -85,6 +116,10 @@ const RegisterSellerFlow = () => {
         } catch (error) {
             console.error('Registration failed:', error);
             setError(error.response?.data?.message || error.message || 'Registration failed. Please try again.');
+            // Clear registration intent on failure
+            localStorage.removeItem('sellerRegistrationIntent');
+            localStorage.removeItem('registrationStep');
+            localStorage.removeItem('registrationTimestamp');
         } finally {
             setLoading(false);
         }
@@ -97,6 +132,10 @@ const RegisterSellerFlow = () => {
             console.log('Step 1: Starting seller profile creation');
             console.log('User data available:', userData);
             console.log('Form data received:', formData);
+
+            // Update registration step in both server and localStorage
+            localStorage.setItem('registrationStep', '2');
+            localStorage.setItem('registrationTimestamp', new Date().toISOString());
 
             const sellerProfileData = {
                 businessName: formData.businessName,
@@ -114,7 +153,10 @@ const RegisterSellerFlow = () => {
                 businessDocuments: {
                     ...(formData.gstNumber && { gst: formData.gstNumber }),
                     ...(formData.panNumber && { pan: formData.panNumber })
-                }
+                },
+                registrationStep: 2,
+                role: 'pending_seller',
+                registrationTimestamp: new Date()
             };
 
             console.log('Step 2: Sending seller profile data to server:', sellerProfileData);
@@ -129,14 +171,13 @@ const RegisterSellerFlow = () => {
                     const updatedProfile = await api.auth.getProfile();
                     console.log('Step 6: Updated user profile received:', updatedProfile);
 
-
-
                     if (updatedProfile?.data?.user) {
                         console.log('Step 7: Setting user data and updating step');
                         setUserData(updatedProfile.data.user);
                         await checkAuth(true);
                         setActiveStep(2);
                         navigate('/pricing', { 
+                            replace: true,
                             state: { 
                                 fromRegistration: true,
                                 userData: updatedProfile.data.user 

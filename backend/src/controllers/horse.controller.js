@@ -9,9 +9,11 @@ const Seller = require('../models/Seller');
 // @access  Public
 exports.getFeaturedHorses = async (req, res) => {
     try {
-        const horses = await Horse.find({ listingStatus: 'active' })
+        const horses = await Horse.find({ 
+            listingStatus: 'active',
+            'featured.active': true
+        })
             .sort('-statistics.views')
-            .limit(6)
             .populate('seller', 'businessName location');
 
         res.json({
@@ -223,8 +225,10 @@ exports.getHorseById = async (req, res) => {
             });
         }
 
-        // Increment views
-        await horse.incrementViews();
+        // Increment views only if user is authenticated
+        if (req.user) {
+            await horse.incrementViews(req.user._id);
+        }
 
         res.json({
             success: true,

@@ -85,33 +85,71 @@ exports.getMe = async (req, res) => {
 // @access  Private (Seller)
 exports.updateProfile = async (req, res) => {
     try {
-        const seller = await Seller.findOneAndUpdate(
-            { user: req.user._id },
-            {
-                businessName: req.body.businessName,
-                description: req.body.description,
-                contactInfo: req.body.contactInfo,
-                socialMedia: req.body.socialMedia
-            },
-            { new: true, runValidators: true }
-        );
-
-        if (!seller) {
+        // First get the existing seller profile
+        const existingSeller = await Seller.findOne({ user: req.user._id });
+        
+        if (!existingSeller) {
             return res.status(404).json({
                 success: false,
                 message: 'Seller profile not found'
             });
         }
 
+        // Validate required fields
+        const requiredFields = {
+            businessName: req.body.businessName || existingSeller.businessName,
+            description: req.body.description || existingSeller.description,
+            'location.state': req.body.location?.state || existingSeller.location.state,
+            'location.city': req.body.location?.city || existingSeller.location.city,
+            'location.pincode': req.body.location?.pincode || existingSeller.location.pincode,
+            'contactDetails.phone': req.body.contactDetails?.phone || existingSeller.contactDetails.phone,
+            'contactDetails.email': req.body.contactDetails?.email || existingSeller.contactDetails.email
+        };
+
+        // Check if any required field is missing
+        const missingFields = Object.entries(requiredFields)
+            .filter(([_, value]) => !value)
+            .map(([key]) => key);
+
+        if (missingFields.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `Missing required fields: ${missingFields.join(', ')}`
+            });
+        }
+
+        // Prepare update data with all fields
+        const updatedData = {
+            businessName: requiredFields.businessName,
+            description: requiredFields.description,
+            location: {
+                state: requiredFields['location.state'],
+                city: requiredFields['location.city'],
+                pincode: requiredFields['location.pincode']
+            },
+            contactDetails: {
+                phone: requiredFields['contactDetails.phone'],
+                email: requiredFields['contactDetails.email'],
+                whatsapp: req.body.contactDetails?.whatsapp || existingSeller.contactDetails.whatsapp
+            }
+        };
+
+        // Update with validated data
+        const seller = await Seller.findOneAndUpdate(
+            { user: req.user._id },
+            updatedData,
+            { new: true, runValidators: true }
+        );
+
         res.json({
             success: true,
             seller
         });
     } catch (error) {
-        console.error(error);
+        console.error('Error updating seller profile:', error);
         res.status(500).json({
             success: false,
-            message: 'Server error'
+            message: error.message || 'Server error'
         });
     }
 };
@@ -253,49 +291,6 @@ exports.getReviews = async (req, res) => {
         res.json({
             success: true,
             reviews: seller.reviews
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error'
-        });
-    }
-};
-
-// @desc    Add review for seller
-// @route   POST /api/sellers/reviews
-// @access  Private
-exports.addReview = async (req, res) => {
-    try {
-        const { rating, comment } = req.body;
-        const seller = await Seller.findById(req.params.id);
-
-        if (!seller) {
-            return res.status(404).json({
-                success: false,
-                message: 'Seller not found'
-            });
-        }
-
-        const review = {
-            user: req.user._id,
-            rating,
-            comment,
-            date: Date.now()
-        };
-
-        seller.reviews.push(review);
-
-        // Update average rating
-        const totalRating = seller.reviews.reduce((sum, item) => sum + item.rating, 0);
-        seller.rating = totalRating / seller.reviews.length;
-
-        await seller.save();
-
-        res.json({
-            success: true,
-            review
         });
     } catch (error) {
         console.error(error);

@@ -20,8 +20,6 @@ const {
     getAnalytics,
     getListings,
     getInquiries,
-    getReviews,
-    addReview,
     updateSubscription,
     cancelSubscription,
     getSubscriptionDetails,
@@ -337,9 +335,6 @@ router.get('/listings', protect, authorize('seller'), getListings);
 router.get('/inquiries', protect, authorize('seller'), getInquiries);
 
 // Reviews
-router.get('/reviews', protect, authorize('seller'), getReviews);
-router.post('/reviews', protect, addReview);
-
 // Subscription management
 router.put('/subscription', protect, authorize('seller'), updateSubscription);
 router.delete('/subscription', protect, authorize('seller'), cancelSubscription);
