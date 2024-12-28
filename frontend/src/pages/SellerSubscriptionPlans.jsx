@@ -536,10 +536,11 @@ const SellerSubscriptionPlans = () => {
                     {plans.map((plan) => (
                         <div
                             key={plan.id}
-                            className={`relative backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl overflow-hidden border transition-all duration-300 hover:scale-105 ${plan.recommended
+                            className={`relative backdrop-blur-sm bg-white/90 rounded-2xl shadow-xl overflow-hidden border transition-all duration-300 hover:scale-105 flex flex-col ${
+                                plan.recommended
                                     ? 'border-primary shadow-primary/20'
                                     : 'border-white'
-                                }`}
+                            }`}
                         >
                             {plan.recommended && (
                                 <div className="absolute top-0 right-0 bg-primary text-white px-4 py-1 rounded-bl-lg text-sm font-medium">
@@ -563,7 +564,7 @@ const SellerSubscriptionPlans = () => {
                             </div>
 
                             {/* Features List */}
-                            <div className="p-6 md:p-8 border-t border-gray-100">
+                            <div className="p-6 md:p-8 border-t border-gray-100 flex-grow">
                                 <ul className="space-y-4">
                                     {plan.features.map((feature, index) => (
                                         <li key={index} className="flex items-start gap-3">
@@ -574,8 +575,8 @@ const SellerSubscriptionPlans = () => {
                                 </ul>
                             </div>
 
-                            {/* Action Button */}
-                            <div className="p-6 md:p-8 bg-gray-50/50">
+                            {/* Action Button - Now in a fixed position at bottom */}
+                            <div className="p-6 md:p-8 bg-gray-50/50 mt-auto">
                                 <button
                                     onClick={() => handlePlanAction(plan)}
                                     disabled={loading}
