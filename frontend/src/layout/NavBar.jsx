@@ -17,7 +17,7 @@ import {
   ShieldCheck,
   UserCircle
 } from 'lucide-react';
-import logo from '../assets/react.svg';
+import logo from '../assets/logo/gallopinglogo.png';
 import axios from 'axios';
 
 const NavBar = () => {
