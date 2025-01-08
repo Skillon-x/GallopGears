@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Base URL configuration
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://gallopgears-664c.onrender.com/api';
 // const API_BASE_URL = 'https://gallopgears.onrender.com/api'
 // Create axios instance with default config
 const apiClient = axios.create({
